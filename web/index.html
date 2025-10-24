@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>云音乐 - 首页</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="#" id="playlistsBtn">我的歌单</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+    <div class="user-actions">
+      <button class="primary">创建歌单</button>
+      <button id="loginOpen">登录</button>
+      <button id="registerOpen">注册</button>
+      <button id="logoutBtn" class="hidden">退出</button>
+      <span id="userNickname" class="hidden nickname"></span>
+    </div>
+  </header>
+
+  <section class="banner">
+    <div class="carousel">
+      <div class="slides">
+        <div class="slide active" style="background-image:url('https://picsum.photos/id/1015/1200/300');"></div>
+        <div class="slide" style="background-image:url('https://picsum.photos/id/1025/1200/300');"></div>
+        <div class="slide" style="background-image:url('https://picsum.photos/id/1042/1200/300');"></div>
+      </div>
+      <button class="carousel-btn prev">&#10094;</button>
+      <button class="carousel-btn next">&#10095;</button>
+    </div>
+    <aside class="client-tip">
+      <h3>客户端下载</h3>
+      <p>PC、iPhone、Android、Mac客户端可用</p>
+      <a class="primary" href="#">立即下载</a>
+    </aside>
+  </section>
+
+  <main class="content">
+    <div class="section-header">
+      <h2>热门推荐</h2>
+      <div class="tabs">
+        <a href="#" class="active">推荐</a>
+        <a href="#">华语</a>
+        <a href="#">欧美</a>
+        <a href="#">韩语</a>
+        <a href="#">日语</a>
+      </div>
+    </div>
+
+    <section class="grid">
+      <!-- 卡片示例，点击跳转到歌曲页 -->
+      <a class="card" href="/song">
+        <div class="thumb" style="background-image:url('https://picsum.photos/id/1062/300/300');"></div>
+        <div class="card-info">
+          <h3></h3>
+          <p>Vaundy</p>
+          <span class="playcount">36,807</span>
+        </div>
+      </a>
+
+      <a class="card" href="/song">
+        <div class="thumb" style="background-image:url('https://picsum.photos/id/1035/300/300');"></div>
+        <div class="card-info">
+          <h3>NEW MUSIC</h3>
+          <p>合辑推荐</p>
+          <span class="playcount">59,147</span>
+        </div>
+      </a>
+
+      <a class="card" href="/song">
+        <div class="thumb" style="background-image:url('https://picsum.photos/id/1050/300/300');"></div>
+        <div class="card-info">
+          <h3>流行精选</h3>
+          <p>今日热门</p>
+          <span class="playcount">25,947</span>
+        </div>
+      </a>
+
+      <a class="card" href="/song">
+        <div class="thumb" style="background-image:url('https://picsum.photos/id/1048/300/300');"></div>
+        <div class="card-info">
+          <h3>夏日电音</h3>
+          <p>派对必备</p>
+          <span class="playcount">8,978</span>
+        </div>
+      </a>
+
+      <a class="card" href="/song">
+        <div class="thumb" style="background-image:url('https://picsum.photos/id/103/300/300');"></div>
+        <div class="card-info">
+          <h3>摇滚热潮</h3>
+          <p>乐队精选</p>
+          <span class="playcount">7,525</span>
+        </div>
+      </a>
+    </section>
+
+    <aside class="sidebar">
+      <div class="vip">
+        <h3>黑胶VIP</h3>
+        <p>畅享高音质、专属特权</p>
+        <button class="primary">开通VIP</button>
+      </div>
+
+      <div class="artists">
+        <h3>入驻歌手</h3>
+        <ul>
+          <li>张惠妹aMEI</li>
+          <li>吴莫愁Momo</li>
+          <li>孙楠</li>
+          <li>霍尊</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div>© 2025 云音乐 </div>
+  </footer>
+
+  <!-- 导入本地歌单模态框 -->
+  <div id="playlistModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="playlistTitle">
+    <div class="modal-header">
+      <div id="playlistTitle">导入本地歌单</div>
+      <button class="modal-close" data-close="playlistModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="playlistForm">
+        <label class="form-row">
+          <span>选择音乐文件夹</span>
+          <input type="text" id="musicDirInput" placeholder="请输入音乐文件夹路径" readonly />
+          <button type="button" id="browseBtn" class="btn-gradient">浏览</button>
+        </label>
+        <div class="form-row">
+          <span>当前路径</span>
+          <code id="currentMusicDir">C:\Users\28890\Desktop\music</code>
+        </div>
+        <div class="form-help">
+          <p>提示：选择包含FLAC音乐文件的文件夹，系统将自动扫描并导入所有音乐文件</p>
+        </div>
+        <button type="submit" class="btn-gradient full">导入歌单</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 登录/注册模态框 -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <div id="loginTitle">账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="loginAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </label>
+        <label class="form-row inline">
+          <input type="checkbox" id="loginAuto" checked />
+          <span>自动登录</span>
+        </label>
+        <button type="submit" class="btn-gradient full">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <div id="registerTitle">账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="registerAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="btn-gradient full">注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
+  </script>
+  <script src="/static/app.js"></script>
+  <script>
+    // 导入本地歌单功能
+    document.addEventListener('DOMContentLoaded', () => {
+      const playlistsBtn = document.getElementById('playlistsBtn');
+      const playlistModal = document.getElementById('playlistModal');
+      const modalOverlay = document.getElementById('modalOverlay');
+      const musicDirInput = document.getElementById('musicDirInput');
+      const browseBtn = document.getElementById('browseBtn');
+      const playlistForm = document.getElementById('playlistForm');
+      const currentMusicDir = document.getElementById('currentMusicDir');
+
+      // 打开导入模态框
+      playlistsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal(playlistModal);
+      });
+
+      // 浏览文件夹（模拟功能）
+      browseBtn.addEventListener('click', () => {
+        // 在实际应用中，这里应该调用文件选择对话框
+        // 由于浏览器安全限制，这里使用提示框让用户输入路径
+        const path = prompt('请输入音乐文件夹路径（例如：C:\\Users\\用户名\\Music）:');
+        if (path) {
+          musicDirInput.value = path;
+        }
+      });
+
+      // 提交导入表单
+      playlistForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const musicDir = musicDirInput.value.trim();
+        if (!musicDir) {
+          alert('请选择音乐文件夹路径');
+          return;
+        }
+
+        try {
+          // 调用API更新音乐目录
+          const response = await fetch('/api/update_music_dir', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ musicDir })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            alert('歌单导入成功！系统将重新扫描音乐文件。');
+            closeModal(playlistModal);
+            
+            // 更新当前路径显示
+            currentMusicDir.textContent = musicDir;
+            
+            // 重新加载页面以刷新音乐数据
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            throw new Error('导入失败');
+          }
+        } catch (error) {
+          console.error('导入歌单失败:', error);
+          alert('导入失败，请检查路径是否正确');
+        }
+      });
+
+      // 模态框控制函数
+      function openModal(modal) {
+        modalOverlay.classList.remove('hidden');
+        modal.classList.remove('hidden');
+      }
+
+      function closeModal(modal) {
+        modalOverlay.classList.add('hidden');
+        modal.classList.add('hidden');
+      }
+
+      // 关闭按钮
+      document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const modalId = btn.getAttribute('data-close');
+          const modal = document.getElementById(modalId);
+          closeModal(modal);
+        });
+      });
+
+      // 点击遮罩关闭
+      modalOverlay.addEventListener('click', () => {
+        closeModal(playlistModal);
+        closeModal(document.getElementById('loginModal'));
+        closeModal(document.getElementById('registerModal'));
+      });
+
+      // Esc键关闭
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeModal(playlistModal);
+          closeModal(document.getElementById('loginModal'));
+          closeModal(document.getElementById('registerModal'));
+        }
+      });
+
+      // 获取当前音乐目录
+      fetch('/api/get_music_dir')
+        .then(response => response.json())
+        .then(data => {
+          if (data.musicDir) {
+            currentMusicDir.textContent = data.musicDir;
+          }
+        })
+        .catch(error => {
+          console.error('获取音乐目录失败:', error);
+        });
+    });
+  </script>
+</body>
+</html>

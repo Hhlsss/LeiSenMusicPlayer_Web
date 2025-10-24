@@ -1,0 +1,36 @@
+package controller
+
+import (
+	"net/http"
+	"path/filepath"
+)
+
+// HandleIndex 首页：GET /
+func HandleIndex(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "index.html"))
+}
+
+// HandleSong 歌曲页：GET /song
+func HandleSong(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "song.html"))
+}
+
+// HandleArtists 歌手页：GET /artists
+func HandleArtists(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "singer.html"))
+}
+
+// HandleAlbumsPage 专辑列表页：GET /albums
+func HandleAlbumsPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "albums.html"))
+}
+
+// HandleAlbumPage 专辑详情页：GET /album
+func HandleAlbumPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "album.html"))
+}
+
+// HandleArtistPage 歌手详情页：GET /artist/{id}
+func HandleArtistPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "artist.html"))
+}

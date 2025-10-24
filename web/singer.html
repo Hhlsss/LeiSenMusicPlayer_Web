@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>云音乐 - 歌手</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists" class="active">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/playlists">我的歌单</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌手" id="searchInput" />
+    </div>
+    <div class="user-actions">
+      <button class="primary">创建歌单</button>
+      <button id="loginOpen">登录</button>
+      <button id="registerOpen">注册</button>
+      <button id="logoutBtn" class="hidden">退出</button>
+      <span id="userNickname" class="hidden nickname"></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="section-header">
+      <h2>歌手列表</h2>
+      <div class="tabs">
+        <a href="#" class="active" data-category="all">全部</a>
+        <a href="#" data-category="chinese">华语</a>
+        <a href="#" data-category="western">欧美</a>
+        <a href="#" data-category="korean">韩语</a>
+        <a href="#" data-category="japanese">日语</a>
+      </div>
+    </div>
+
+    <section class="grid" id="artistsGrid">
+      <!-- 歌手卡片将通过JavaScript动态生成 -->
+      <div class="loading">加载中...</div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="vip">
+        <h3>黑胶VIP</h3>
+        <p>畅享高音质、专属特权</p>
+        <button class="primary">开通VIP</button>
+      </div>
+
+      <div class="artists">
+        <h3>热门歌手</h3>
+        <ul id="hotArtists">
+          <li>周杰伦</li>
+          <li>林俊杰</li>
+          <li>Taylor Swift</li>
+          <li>陈奕迅</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div>© 2025 云音乐 </div>
+  </footer>
+
+  <!-- 登录/注册模态框 -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <div id="loginTitle">账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="loginAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </label>
+        <label class="form-row inline">
+          <input type="checkbox" id="loginAuto" checked />
+          <span>自动登录</span>
+        </label>
+        <button type="submit" class="btn-gradient full">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <div id="registerTitle">账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="registerAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="btn-gradient full">注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
+  </script>
+  <script>
+    // 歌手数据管理
+    class ArtistManager {
+      constructor() {
+        this.artists = [];
+        this.currentCategory = 'all';
+        this.searchTerm = '';
+      }
+
+      // 从本地音乐文件获取歌手数据
+      async loadArtists() {
+        try {
+          const response = await fetch('/api/artists');
+          if (response.ok) {
+            this.artists = await response.json();
+          } else {
+            // 如果API不可用，使用示例数据
+            this.artists = this.getSampleArtists();
+          }
+          this.renderArtists();
+        } catch (error) {
+          console.error('加载歌手数据失败:', error);
+          this.artists = this.getSampleArtists();
+          this.renderArtists();
+        }
+      }
+
+      // 获取示例歌手数据
+      getSampleArtists() {
+        return [
+          {
+            id: 1,
+            name: '周杰伦',
+            category: 'chinese',
+            songCount: 156,
+            cover: 'https://picsum.photos/id/1015/300/300'
+          },
+          {
+            id: 2,
+            name: '林俊杰',
+            category: 'chinese',
+            songCount: 89,
+            cover: 'https://picsum.photos/id/1016/300/300'
+          },
+          {
+            id: 3,
+            name: 'Taylor Swift',
+            category: 'western',
+            songCount: 234,
+            cover: 'https://picsum.photos/id/1018/300/300'
+          },
+          {
+            id: 4,
+            name: 'Ed Sheeran',
+            category: 'western',
+            songCount: 67,
+            cover: 'https://picsum.photos/id/1019/300/300'
+          },
+          {
+            id: 5,
+            name: 'BTS',
+            category: 'korean',
+            songCount: 123,
+            cover: 'https://picsum.photos/id/1020/300/300'
+          },
+          {
+            id: 6,
+            name: 'Blackpink',
+            category: 'korean',
+            songCount: 45,
+            cover: 'https://picsum.photos/id/1021/300/300'
+          },
+          {
+            id: 7,
+            name: 'Vaundy',
+            category: 'japanese',
+            songCount: 34,
+            cover: 'https://picsum.photos/id/1022/300/300'
+          },
+          {
+            id: 8,
+            name: 'Yoasobi',
+            category: 'japanese',
+            songCount: 28,
+            cover: 'https://picsum.photos/id/1023/300/300'
+          }
+        ];
+      }
+
+      // 过滤歌手
+      getFilteredArtists() {
+        let filtered = this.artists;
+        
+        // 按分类过滤
+        if (this.currentCategory !== 'all') {
+          filtered = filtered.filter(artist => artist.category === this.currentCategory);
+        }
+        
+        // 按搜索词过滤
+        if (this.searchTerm) {
+          filtered = filtered.filter(artist => 
+            artist.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+          );
+        }
+        
+        return filtered;
+      }
+
+      // 渲染歌手列表
+      renderArtists() {
+        const grid = document.getElementById('artistsGrid');
+        const artists = this.getFilteredArtists();
+        
+        if (artists.length === 0) {
+          grid.innerHTML = '<div class="no-results">未找到匹配的歌手</div>';
+          return;
+        }
+        
+        grid.innerHTML = artists.map(artist => `
+          <a class="card artist-card" href="/artist/${artist.id}">
+            <div class="thumb" style="background-image:url('${artist.cover}')"></div>
+            <div class="card-info">
+              <h3>${artist.name}</h3>
+              <p>${this.getCategoryName(artist.category)}歌手</p>
+              <span class="songcount">${artist.songCount}首歌曲</span>
+            </div>
+          </a>
+        `).join('');
+      }
+
+      // 获取分类名称
+      getCategoryName(category) {
+        const categories = {
+          'chinese': '华语',
+          'western': '欧美',
+          'korean': '韩语',
+          'japanese': '日语'
+        };
+        return categories[category] || '其他';
+      }
+
+      // 设置当前分类
+      setCategory(category) {
+        this.currentCategory = category;
+        this.renderArtists();
+      }
+
+      // 设置搜索词
+      setSearchTerm(term) {
+        this.searchTerm = term;
+        this.renderArtists();
+      }
+    }
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      const artistManager = new ArtistManager();
+      
+      // 加载歌手数据
+      artistManager.loadArtists();
+      
+      // 分类标签点击事件
+      document.querySelectorAll('.tabs a').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.tabs a').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          artistManager.setCategory(tab.dataset.category);
+        });
+      });
+      
+      // 搜索功能
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', (e) => {
+        artistManager.setSearchTerm(e.target.value);
+      });
+      
+      // 防抖搜索
+      let searchTimeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          artistManager.setSearchTerm(e.target.value);
+        }, 300);
+      });
+    });
+  </script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

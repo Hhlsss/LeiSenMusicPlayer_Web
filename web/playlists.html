@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>我的歌单</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/playlists" class="active">我的歌单</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌单" />
+    </div>
+    <div class="user-actions">
+      <button class="primary" id="importPlaylistBtn">导入本地歌单</button>
+      <button id="createPlaylistBtn">创建歌单</button>
+      <button id="loginOpen">登录</button>
+      <button id="registerOpen">注册</button>
+      <button id="logoutBtn" class="hidden">退出</button>
+      <span id="userNickname" class="hidden nickname"></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="section-header">
+      <h2>我的歌单</h2>
+      <div class="tabs">
+        <a href="#" class="active" data-category="all">全部</a>
+        <a href="#" data-category="created">我创建的歌单</a>
+        <a href="#" data-category="collected">我收藏的歌单</a>
+      </div>
+    </div>
+
+    <section class="grid" id="playlistsGrid">
+      <!-- 歌单卡片将通过JavaScript动态生成 -->
+      <div class="no-results">
+        <h3>还没有创建歌单</h3>
+        <p>点击"创建歌单"或"导入本地歌单"开始使用</p>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="vip">
+        <h3>黑胶VIP</h3>
+        <p>畅享高音质、专属特权</p>
+        <button class="primary">开通VIP</button>
+      </div>
+
+      <div class="artists">
+        <h3>推荐歌单</h3>
+        <ul>
+          <li>每日推荐</li>
+          <li>热门歌单</li>
+          <li>新歌首发</li>
+          <li>经典老歌</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 导入本地歌单模态框 -->
+  <div id="importModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <div class="modal-header">
+      <div id="importTitle">导入本地歌单</div>
+      <button class="modal-close" data-close="importModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="importForm">
+        <label class="form-row">
+          <span>选择音乐文件夹</span>
+          <input type="text" id="musicDirInput" placeholder="请输入音乐文件夹路径" readonly />
+          <button type="button" id="browseBtn" class="btn-gradient">浏览</button>
+        </label>
+        <div class="form-row">
+          <span>当前路径</span>
+          <code id="currentMusicDir">C:\Users\28890\Desktop\music</code>
+        </div>
+        <div class="form-help">
+          <p>提示：选择包含FLAC音乐文件的文件夹，系统将自动扫描并导入所有音乐文件</p>
+        </div>
+        <button type="submit" class="btn-gradient full">导入歌单</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 模态框遮罩 -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <!-- 登录/注册模态框 -->
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <div id="loginTitle">账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="loginAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </label>
+        <label class="form-row inline">
+          <input type="checkbox" id="loginAuto" checked />
+          <span>自动登录</span>
+        </label>
+        <button type="submit" class="btn-gradient full">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <div id="registerTitle">账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="registerAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="btn-gradient full">注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
+  </script>
+  <script src="/static/app.js"></script>
+  <script>
+    // 导入本地歌单功能
+    document.addEventListener('DOMContentLoaded', () => {
+      const importBtn = document.getElementById('importPlaylistBtn');
+      const importModal = document.getElementById('importModal');
+      const modalOverlay = document.getElementById('modalOverlay');
+      const musicDirInput = document.getElementById('musicDirInput');
+      const browseBtn = document.getElementById('browseBtn');
+      const importForm = document.getElementById('importForm');
+      const currentMusicDir = document.getElementById('currentMusicDir');
+
+      // 打开导入模态框
+      importBtn.addEventListener('click', () => {
+        openModal(importModal);
+      });
+
+      // 浏览文件夹（模拟功能）
+      browseBtn.addEventListener('click', () => {
+        // 在实际应用中，这里应该调用文件选择对话框
+        // 由于浏览器安全限制，这里使用提示框让用户输入路径
+        const path = prompt('请输入音乐文件夹路径（例如：C:\\Users\\用户名\\Music）:');
+        if (path) {
+          musicDirInput.value = path;
+        }
+      });
+
+      // 提交导入表单
+      importForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const musicDir = musicDirInput.value.trim();
+        if (!musicDir) {
+          alert('请选择音乐文件夹路径');
+          return;
+        }
+
+        try {
+          // 调用API更新音乐目录
+          const response = await fetch('/api/update_music_dir', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ musicDir })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            alert('歌单导入成功！系统将重新扫描音乐文件。');
+            closeModal(importModal);
+            
+            // 更新当前路径显示
+            currentMusicDir.textContent = musicDir;
+            
+            // 重新加载页面以刷新音乐数据
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            throw new Error('导入失败');
+          }
+        } catch (error) {
+          console.error('导入歌单失败:', error);
+          alert('导入失败，请检查路径是否正确');
+        }
+      });
+
+      // 模态框控制函数
+      function openModal(modal) {
+        modalOverlay.classList.remove('hidden');
+        modal.classList.remove('hidden');
+      }
+
+      function closeModal(modal) {
+        modalOverlay.classList.add('hidden');
+        modal.classList.add('hidden');
+      }
+
+      // 关闭按钮
+      document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const modalId = btn.getAttribute('data-close');
+          const modal = document.getElementById(modalId);
+          closeModal(modal);
+        });
+      });
+
+      // 点击遮罩关闭
+      modalOverlay.addEventListener('click', () => {
+        closeModal(importModal);
+        closeModal(document.getElementById('loginModal'));
+        closeModal(document.getElementById('registerModal'));
+      });
+
+      // Esc键关闭
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeModal(importModal);
+          closeModal(document.getElementById('loginModal'));
+          closeModal(document.getElementById('registerModal'));
+        }
+      });
+
+      // 获取当前音乐目录
+      fetch('/api/get_music_dir')
+        .then(response => response.json())
+        .then(data => {
+          if (data.musicDir) {
+            currentMusicDir.textContent = data.musicDir;
+          }
+        })
+        .catch(error => {
+          console.error('获取音乐目录失败:', error);
+        });
+    });
+  </script>
+</body>
+</html>

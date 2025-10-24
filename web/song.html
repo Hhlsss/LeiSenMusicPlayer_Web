@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>歌曲详情</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/playlists">我的歌单</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+  </header>
+
+  <main class="song-page">
+    <section class="song-info">
+      <div class="disc">
+        <div class="disc-cover" style="background-image:url('https://picsum.photos/id/1062/300/300');"></div>
+      </div>
+      <div class="meta">
+        <h1></h1>
+        <div class="tags">
+          <span class="tag">VIP单曲</span>
+          <span class="tag">日语</span>
+        </div>
+        <p class="artist">歌手：Vaundy</p>
+        <p class="album">所属专辑：replica</p>
+
+        <div class="actions">
+          <button class="primary" id="playBtn">播放</button>
+          <button>收藏</button>
+          <button>分享</button>
+          <button>下载</button>
+        </div>
+
+        <article class="lyrics">
+          <h3>歌词摘选</h3>
+          <p>ねぇ どこかに置いてきたような 夢を君の横顔に重ねて…（示例）</p>
+        </article>
+      </div>
+
+      <aside class="related">
+        <!-- <h3>包含这首歌的歌单</h3>
+        <ul>
+          <li>流行精选 · 每日推荐</li>
+          <li>夏日电音 · 派对精选</li>
+          <li>摇滚热潮 · 乐队合辑</li>
+        </ul> -->
+      </aside>
+    </section>
+  </main>
+
+  <!-- 底部播放器栏 -->
+  <div class="player-bar">
+    <div class="player-left">
+      <img class="mini-cover" src="https://picsum.photos/id/1062/60/60" alt="cover" />
+      <div class="track">
+        <div class="title"></div>
+        <div class="artist">Vaundy</div>
+      </div>
+    </div>
+    <div class="player-center">
+      <button id="prevBtn">⏮</button>
+      <button id="toggleBtn">⏯</button>
+      <button id="nextBtn">⏭</button>
+      <div class="time">
+        <span id="curTime">00:00</span> / <span id="durTime">00:00</span>
+      </div>
+    </div>
+    <div class="player-right">
+      <input id="progress" type="range" min="0" max="100" value="0" />
+      <input id="volume" type="range" min="0" max="100" value="80" />
+    </div>
+    <audio id="audio" preload="metadata" src="https://www2.cs.uic.edu/~i101/SoundFiles/StarWars3.wav"></audio>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

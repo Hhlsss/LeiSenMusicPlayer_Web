@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>专辑详情</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/playlists">我的歌单</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+  </header>
+
+  <main class="album-page">
+    <section class="album-info">
+      <div class="disc">
+        <div class="disc-cover" id="albumCover" style="background-image:url('https://picsum.photos/id/1015/300/300');"></div>
+      </div>
+      <div class="meta">
+        <h1 id="albumTitle"></h1>
+        <div class="tags">
+          <span class="tag" id="albumArtist"></span>
+          <span class="tag" id="songCount"></span>
+        </div>
+        <p class="artist">专辑详情</p>
+
+        <div class="actions">
+          <button class="primary" id="playAllBtn">播放全部</button>
+          <button id="collectBtn">收藏</button>
+          <button id="shareBtn">分享</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="album-songs">
+      <h2>歌曲列表</h2>
+      <div class="songs-list" id="songsList">
+        <div class="loading">加载中...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 底部播放器栏 -->
+  <div class="player-bar">
+    <div class="player-left">
+      <img class="mini-cover" id="miniCover" src="https://picsum.photos/id/1062/60/60" alt="cover" />
+      <div class="track">
+        <div class="title" id="playerTitle"></div>
+        <div class="artist" id="playerArtist"></div>
+      </div>
+    </div>
+    <div class="player-center">
+      <button id="prevBtn">⏮</button>
+      <button id="toggleBtn">⏯</button>
+      <button id="nextBtn">⏭</button>
+      <div class="time">
+        <span id="curTime">00:00</span> / <span id="durTime">00:00</span>
+      </div>
+    </div>
+    <div class="player-right">
+      <input id="progress" type="range" min="0" max="100" value="0" />
+      <input id="volume" type="range" min="0" max="100" value="80" />
+    </div>
+    <audio id="audio" preload="metadata"></audio>
+  </div>
+
+  <script>
+    // 获取URL参数
+    function getUrlParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        album: urlParams.get('album') || '',
+        artist: urlParams.get('artist') || ''
+      };
+    }
+
+    // 加载专辑信息
+    async function loadAlbumInfo() {
+      const { album, artist } = getUrlParams();
+      if (!album) {
+        document.getElementById('albumTitle').textContent = '专辑信息加载失败';
+        return;
+      }
+
+      try {
+        document.getElementById('albumTitle').textContent = album;
+        document.getElementById('albumArtist').textContent = artist || '未知艺术家';
+        
+        return { album, artist };
+      } catch (error) {
+        console.error('加载专辑信息失败:', error);
+        document.getElementById('albumTitle').textContent = '专辑信息加载失败';
+      }
+    }
+
+    // 加载专辑歌曲列表
+    async function loadAlbumSongs() {
+      const { album, artist } = getUrlParams();
+      if (!album) return;
+
+      try {
+        const response = await fetch(`/api/album_tracks?album=${encodeURIComponent(album)}&artist=${encodeURIComponent(artist)}`);
+        if (!response.ok) throw new Error('歌曲列表加载失败');
+        const songs = await response.json();
+        
+        const songsList = document.getElementById('songsList');
+        if (songs.length === 0) {
+          songsList.innerHTML = '<div class="no-results">该专辑暂无歌曲</div>';
+          return;
+        }
+        
+        // 更新歌曲数量
+        document.getElementById('songCount').textContent = `${songs.length}首歌曲`;
+        
+        // 设置专辑封面（使用第一首歌曲的封面）
+        if (songs.length > 0) {
+          const coverEl = document.getElementById('albumCover');
+          coverEl.style.backgroundImage = `url('/api/cover?id=${songs[0].id}')`;
+        }
+        
+        // 渲染歌曲列表
+        songsList.innerHTML = renderSongsList(songs);
+        
+        // 添加歌曲点击事件
+        addSongClickEvents(songs);
+        
+        return songs;
+      } catch (error) {
+        console.error('加载歌曲列表失败:', error);
+        document.getElementById('songsList').innerHTML = '<div class="no-results">歌曲列表加载失败</div>';
+      }
+    }
+
+    // 渲染歌曲列表
+    function renderSongsList(songs) {
+      return `
+        <div class="songs-container">
+          ${songs.map((song, index) => `
+            <div class="song-item" data-song-id="${song.id}">
+              <span class="song-index">${index + 1}</span>
+              <div class="song-info">
+                <div class="song-title">${song.title || '未知标题'}</div>
+                <div class="song-album">${song.artist || '未知艺术家'}</div>
+              </div>
+              <div class="song-actions">
+                <button class="play-btn" data-song-id="${song.id}">播放</button>
+                <button class="collect-btn">收藏</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // 添加歌曲点击事件
+    function addSongClickEvents(songs) {
+      // 播放按钮点击事件
+      document.querySelectorAll('.play-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const songId = btn.dataset.songId;
+          playSong(songId, songs);
+        });
+      });
+      
+      // 歌曲项点击事件（整行点击播放）
+      document.querySelectorAll('.song-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('play-btn') && !e.target.classList.contains('collect-btn')) {
+            const songId = item.dataset.songId;
+            playSong(songId, songs);
+          }
+        });
+      });
+    }
+
+    // 播放器控制变量
+    let currentPlaylist = [];
+    let currentIndex = -1;
+
+    // 播放歌曲
+    async function playSong(songId, playlist) {
+      try {
+        // 获取歌曲信息
+        const response = await fetch(`/api/track?id=${songId}`);
+        if (!response.ok) throw new Error('歌曲信息加载失败');
+        const song = await response.json();
+        
+        // 设置音频源
+        const audio = document.getElementById('audio');
+        audio.src = `/api/audio?id=${songId}`;
+        
+        // 更新播放器信息
+        document.getElementById('playerTitle').textContent = song.title || '未知标题';
+        document.getElementById('playerArtist').textContent = song.artist || '未知艺术家';
+        document.getElementById('miniCover').src = `/api/cover?id=${songId}`;
+        
+        // 播放
+        await audio.play();
+        
+        // 设置当前播放列表和索引
+        currentPlaylist = playlist;
+        currentIndex = currentPlaylist.findIndex(track => track.id == songId);
+        
+      } catch (error) {
+        console.error('播放歌曲失败:', error);
+        alert('播放失败，请稍后重试');
+      }
+    }
+
+    // 播放全部
+    document.getElementById('playAllBtn').addEventListener('click', async () => {
+      const { album, artist } = getUrlParams();
+      try {
+        const response = await fetch(`/api/album_tracks?album=${encodeURIComponent(album)}&artist=${encodeURIComponent(artist)}`);
+        if (!response.ok) throw new Error('歌曲列表加载失败');
+        const songs = await response.json();
+        
+        if (songs.length > 0) {
+          // 播放第一首歌曲
+          playSong(songs[0].id, songs);
+        }
+      } catch (error) {
+        console.error('播放全部失败:', error);
+      }
+    });
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 加载专辑信息和歌曲列表
+      await loadAlbumInfo();
+      const songs = await loadAlbumSongs();
+      
+      // 初始化播放器控制
+      initPlayerControls();
+    });
+
+    // 播放器控制初始化
+    function initPlayerControls() {
+      const audio = document.getElementById('audio');
+      const toggleBtn = document.getElementById('toggleBtn');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const progress = document.getElementById('progress');
+      const volume = document.getElementById('volume');
+      const curTime = document.getElementById('curTime');
+      const durTime = document.getElementById('durTime');
+
+      // 播放/暂停
+      toggleBtn.addEventListener('click', async () => {
+        if (audio.paused) {
+          await audio.play();
+        } else {
+          audio.pause();
+        }
+      });
+
+      // 上一首
+      prevBtn.addEventListener('click', () => {
+        if (currentPlaylist.length > 0 && currentIndex > 0) {
+          currentIndex--;
+          playSong(currentPlaylist[currentIndex].id, currentPlaylist);
+        }
+      });
+
+      // 下一首
+      nextBtn.addEventListener('click', () => {
+        if (currentPlaylist.length > 0 && currentIndex < currentPlaylist.length - 1) {
+          currentIndex++;
+          playSong(currentPlaylist[currentIndex].id, currentPlaylist);
+        }
+      });
+
+      // 进度条控制
+      let isSeeking = false;
+      progress.addEventListener('input', () => {
+        if (isFinite(audio.duration)) {
+          const value = Number(progress.value) || 0;
+          audio.currentTime = value;
+        }
+      });
+
+      progress.addEventListener('mousedown', () => { isSeeking = true; });
+      progress.addEventListener('mouseup', () => { isSeeking = false; });
+
+      // 音量控制
+      volume.addEventListener('input', () => {
+        audio.volume = volume.value / 100;
+      });
+
+      // 时间更新
+      audio.addEventListener('timeupdate', () => {
+        curTime.textContent = formatTime(audio.currentTime);
+        if (!isSeeking && isFinite(audio.duration)) {
+          progress.value = Math.floor(audio.currentTime);
+        }
+      });
+
+      audio.addEventListener('loadedmetadata', () => {
+        if (isFinite(audio.duration)) {
+          durTime.textContent = formatTime(audio.duration);
+          progress.max = Math.floor(audio.duration);
+        }
+      });
+
+      // 歌曲播放结束自动下一首
+      audio.addEventListener('ended', () => {
+        if (currentPlaylist.length > 0 && currentIndex < currentPlaylist.length - 1) {
+          currentIndex++;
+          playSong(currentPlaylist[currentIndex].id, currentPlaylist);
+        }
+      });
+    }
+
+    // 格式化时间
+    function formatTime(seconds) {
+      const min = Math.floor(seconds / 60);
+      const sec = Math.floor(seconds % 60);
+      return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+  </script>
+</body>
+</html>

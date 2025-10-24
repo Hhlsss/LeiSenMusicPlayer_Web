@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>雷森音乐 · 需求文档</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #222;
+      --muted: #666;
+      --primary: #e60026;
+      --card: #f7f7f9;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+        "PingFang SC", "Microsoft YaHei", Arial, "Noto Sans", sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .section {
+      margin-top: 28px;
+      padding: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .section h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      border-left: 4px solid var(--primary);
+      padding-left: 8px;
+    }
+    .section h3 {
+      margin: 18px 0 8px;
+      font-size: 16px;
+    }
+    ul, ol { margin: 8px 0 8px 20px; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+    }
+    .api code { background: #fff; border: 1px solid var(--border); padding: 2px 6px; border-radius: 6px; }
+    .footer {
+      margin-top: 24px; color: var(--muted); font-size: 13px;
+    }
+    @media print {
+      a[href]:after { content: " (" attr(href) ")"; font-size: 12px; color: var(--muted); }
+      .section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>雷森音乐（基于 Go 的本地音乐播放器与管理系统）需求文档</h1>
+      <p>版本：v0.1 · 技术栈：Go(net/http) + 原生 HTML/CSS/JS + Supabase（认证与云能力）</p>
+    </header>
+
+    <section class="section">
+      <h2>一、项目概述</h2>
+      <ul>
+        <li>名称：雷森音乐</li>
+        <li>定位：本地 FLAC 音乐扫描、封面与歌词提取、在线播放与歌词同步的轻量级应用</li>
+        <li>目标平台：Windows（优先），后续适配跨平台</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>二、当前功能范围（已实现）</h2>
+      <h3>1) 配置与启动</h3>
+      <ul>
+        <li>支持通过 <code>.env</code> 或环境变量配置 <code>SUPABASE_URL</code> 与 <code>SUPABASE_ANON_KEY</code></li>
+        <li>服务启动后提供静态页面与 REST API</li>
+      </ul>
+      <h3>2) 本地音乐扫描与元数据</h3>
+      <ul>
+        <li>扫描目录：<code>C:\Users\28890\Desktop\music</code></li>
+        <li>提取 FLAC 元数据：标题、歌手、专辑、封面（内嵌图片）、歌词（原始与清洗）</li>
+        <li>内存缓存曲目清单，支持手动重扫</li>
+      </ul>
+      <h3>3) REST API</h3>
+      <div class="api">
+        <ul>
+          <li><code>GET /api/music</code>：曲目列表（<code>id, title, artist, album, hasCover, hasLyrics</code>）</li>
+          <li><code>GET /api/track?id=…</code>：单曲元数据</li>
+          <li><code>GET /api/audio?id=…</code>：音频流，支持 Range（206 Partial Content）</li>
+          <li><code>GET /api/cover?id=…</code>：封面图片</li>
+          <li><code>GET /api/lyrics?id=…</code>：清洗歌词（去时间戳，逐句换行）</li>
+          <li><code>GET /api/lyrics_raw?id=…</code>：原始 LRC（带时间戳）</li>
+          <li><code>GET /api/rescan</code>：触发重扫描（返回扫描统计）</li>
+          <li><code>POST /api/login</code>：登录（返回昵称）；<code>POST /api/register</code>：注册</li>
+        </ul>
+      </div>
+      <h3>4) 前端页面与交互</h3>
+      <ul>
+        <li>首页 <code>index.html</code>：热门推荐从 <code>/api/music</code> 动态渲染；轮播每次随机 5 个封面</li>
+        <li>歌曲页 <code>song.html</code>：显示真实标题/歌手/专辑、封面；歌词按进度高亮；播放器支持拖动进度（后端 Range 支持）</li>
+        <li>登录成功后隐藏登录/注册按钮，显示用户昵称</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>三、已知限制与待完善问题</h2>
+      <ul>
+        <li>目录固定：仅扫描固定路径，需改为可配置（支持多目录）</li>
+        <li>歌词来源有限：依赖内嵌或元数据；缺少联网检索策略与持久化</li>
+        <li>封面/歌词缓存缺失：每次读取文件，缺少本地缓存与缩略图</li>
+        <li>列表性能：<code>/api/music</code> 全量返回，缺少分页与搜索</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>四、未来亟待开发的功能（规划）</h2>
+      <h3>A. 音乐库与目录管理</h3>
+      <ul>
+        <li>多目录配置（UI 与配置文件）、增量扫描与变更监控</li>
+        <li>封面与歌词缓存落盘（含缩略图生成）</li>
+      </ul>
+      <h3>B. 播放体验升级</h3>
+      <ul>
+        <li>播放队列、播放模式（顺序/随机/单曲循环）</li>
+        <li>音频转码与 HLS 分片，提升弱网/移动端体验</li>
+        <li>进度条移动端深度适配（触控事件与防抖）、波形可视化（可选）</li>
+      </ul>
+      <h3>C. 歌词与元数据</h3>
+      <ul>
+        <li>多来源歌词自动检索与本地存储（可开关）</li>
+        <li>歌词编辑与时间轴对齐工具（保存 .lrc）</li>
+        <li>多语种元数据与编码兼容</li>
+      </ul>
+      <h3>D. 用户与云能力（Supabase）</h3>
+      <ul>
+        <li>完善用户系统：头像/昵称/偏好设置</li>
+        <li>歌单/收藏/播放历史，跨设备同步（RLS 安全策略）</li>
+        <li>基础社交：评论、点赞、分享</li>
+      </ul>
+      <h3>E. 搜索与推荐</h3>
+      <ul>
+        <li>全库搜索（标题/歌手/专辑/标签）与智能聚合</li>
+        <li>基于播放历史与偏好的推荐</li>
+      </ul>
+      <h3>F. 管理后台与设置</h3>
+      <ul>
+        <li>Web 管理页面：目录配置、扫描状态、缓存管理、日志</li>
+        <li>系统设置：端口、CORS、静态路径、CDN/代理</li>
+      </ul>
+      <h3>G. 非功能性需求</h3>
+      <ul>
+        <li>性能：分页与懒加载、缩略图、API 缓存</li>
+        <li>安全：环境变量与密钥管理，日志不泄露；RLS 与权限控制</li>
+        <li>兼容：桌面浏览器优先，移动端适配</li>
+        <li>可观测性：访问/错误日志、播放与 API 指标</li>
+        <li>测试：单测（service/controller）、集成与端到端测试</li>
+        <li>部署：Windows 服务/托盘、Docker 容器化（可选）</li>
+        <li>国际化：中文为主，扩展英文/日文</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>五、接口契约（简要）</h2>
+      <div class="api">
+        <ul>
+          <li><code>GET /api/music</code> → <code>[{id, title, artist, album, hasCover, hasLyrics}]</code></li>
+          <li><code>GET /api/track?id</code> → <code>{id, title, artist, album}</code></li>
+          <li><code>GET /api/audio?id</code> → 音频流（206 Partial Content / Range）</li>
+          <li><code>GET /api/cover?id</code> → 图片字节流</li>
+          <li><code>GET /api/lyrics?id</code> → <code>{lyrics: string}</code>（纯文本，逐句换行）</li>
+          <li><code>GET /api/lyrics_raw?id</code> → <code>{lyrics: string}</code>（原始 LRC）</li>
+          <li><code>GET /api/rescan</code> → <code>{count, updatedAt}</code>（可扩展）</li>
+          <li><code>POST /api/login</code> → <code>{nickname}</code> 或 <code>{error}</code></li>
+          <li><code>POST /api/register</code> → <code>{message}</code> 或 <code>{error}</code></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>六、里程碑计划（建议）</h2>
+      <ul>
+        <li>M1（当前完善）：目录可配置、重扫统计；前端分页与搜索；封面缓存与缩略图</li>
+        <li>M2（播放与歌词）：播放队列与模式、移动端拖动适配、多来源歌词与编辑工具</li>
+        <li>M3（用户与歌单）：Supabase 表结构与数据流；歌单、收藏、历史记录与分享</li>
+        <li>M4（管理与部署）：管理后台、日志与指标；打包发布（Windows 服务/Docker）</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>七、风险与应对</h2>
+      <ul>
+        <li>元数据缺失：显示占位并支持手动编辑保存</li>
+        <li>歌词同步误差：提供行级偏移与微调工具</li>
+        <li>大型音乐库性能：分页、懒加载、缓存与并发扫描限速</li>
+        <li>跨平台差异：抽象文件与目录访问，优先保证 Windows 体验</li>
+      </ul>
+    </section>
+
+    <div class="footer">
+      <div>© 2025 雷森音乐 · 本文档可在浏览器使用“打印”→“保存为 PDF”生成 PDF 文件。</div>
+    </div>
+  </div>
+</body>
+</html>
