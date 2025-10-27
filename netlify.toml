@@ -1,0 +1,14 @@
+[build]
+  publish = "web"
+  command = "echo 'Building static site for Netlify'"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API代理到后端服务（需要后端部署后配置）
+[[redirects]]
+  from = "/api/*"
+  to = "https://your-backend-service.herokuapp.com/api/:splat"
+  status = 200

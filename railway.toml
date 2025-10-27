@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "./MusicPlayerWeb"
+
+[env]
+PORT = "8080"
