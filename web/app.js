@@ -229,13 +229,37 @@
   const curTime = document.getElementById("curTime");
   const durTime = document.getElementById("durTime");
 
-  // 播放时封面旋转
+  // 播放时封面旋转和按钮状态更新
   const discCover = document.querySelector(".disc-cover");
+  const updatePlayButtonState = () => {
+    if (toggleBtn) {
+      if (audio.paused) {
+        toggleBtn.classList.remove("playing");
+        toggleBtn.textContent = "⏯";
+      } else {
+        toggleBtn.classList.add("playing");
+        toggleBtn.textContent = "⏸";
+      }
+    }
+  };
+  
   if (discCover) {
-    audio.addEventListener("play",   () => discCover.classList.add("rotating"));
-    audio.addEventListener("pause",  () => discCover.classList.remove("rotating"));
-    audio.addEventListener("ended",  () => discCover.classList.remove("rotating"));
+    audio.addEventListener("play",   () => {
+      discCover.classList.add("rotating");
+      updatePlayButtonState();
+    });
+    audio.addEventListener("pause",  () => {
+      discCover.classList.remove("rotating");
+      updatePlayButtonState();
+    });
+    audio.addEventListener("ended",  () => {
+      discCover.classList.remove("rotating");
+      updatePlayButtonState();
+    });
   }
+  
+  // 初始化按钮状态
+  updatePlayButtonState();
 
   // 预取播放列表并定位当前索引
   let playlist = [];
@@ -279,10 +303,52 @@
     }
   });
 
+  // 更新进度条样式
+  const updateProgressStyle = () => {
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      const progressPercent = (audio.currentTime / audio.duration) * 100;
+      progress.style.setProperty('--progress', progressPercent + '%');
+    }
+  };
+
+  // 更新音量条样式
+  const updateVolumeStyle = () => {
+    const volumePercent = audio.volume * 100;
+    volume.style.setProperty('--volume', volumePercent + '%');
+    
+    // 更新音量图标
+    const volumeIcon = document.getElementById('volumeIcon');
+    if (volumeIcon) {
+      if (audio.volume === 0) {
+        volumeIcon.textContent = '🔇';
+      } else if (audio.volume < 0.3) {
+        volumeIcon.textContent = '🔈';
+      } else if (audio.volume < 0.7) {
+        volumeIcon.textContent = '🔉';
+      } else {
+        volumeIcon.textContent = '🔊';
+      }
+    }
+  };
+
+  // 音量图标点击静音/取消静音
+  const volumeIcon = document.getElementById('volumeIcon');
+  if (volumeIcon) {
+    volumeIcon.addEventListener('click', () => {
+      if (audio.volume > 0) {
+        audio.volume = 0;
+      } else {
+        audio.volume = 0.8; // 恢复默认音量
+      }
+      updateVolumeStyle();
+    });
+  }
+
   audio.addEventListener("timeupdate", () => {
     curTime.textContent = fmt(audio.currentTime);
     if (!isSeeking && isFinite(audio.duration)) {
       progress.value = Math.floor(audio.currentTime);
+      updateProgressStyle();
     }
   });
 
@@ -325,7 +391,12 @@
 
   volume.addEventListener("input", () => {
     audio.volume = volume.value / 100;
+    updateVolumeStyle();
   });
+
+  // 初始化样式
+  updateVolumeStyle();
+  updateProgressStyle();
 
   // 上一首/下一首：跳转到相邻歌曲详情页
   function gotoByOffset(off) {

@@ -70,13 +70,16 @@
       <button id="prevBtn">⏮</button>
       <button id="toggleBtn">⏯</button>
       <button id="nextBtn">⏭</button>
+    </div>
+    <div class="player-right">
       <div class="time">
         <span id="curTime">00:00</span> / <span id="durTime">00:00</span>
       </div>
-    </div>
-    <div class="player-right">
       <input id="progress" type="range" min="0" max="100" value="0" />
-      <input id="volume" type="range" min="0" max="100" value="80" />
+      <div class="volume-container">
+        <span class="volume-icon" id="volumeIcon">🔊</span>
+        <input id="volume" type="range" min="0" max="100" value="80" />
+      </div>
     </div>
     <audio id="audio" preload="metadata" src="https://www2.cs.uic.edu/~i101/SoundFiles/StarWars3.wav"></audio>
   </div>
