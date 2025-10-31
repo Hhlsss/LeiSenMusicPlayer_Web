@@ -80,6 +80,7 @@
     function getUrlParams() {
       const urlParams = new URLSearchParams(window.location.search);
       return {
+        id: urlParams.get('id') || '',
         album: urlParams.get('album') || '',
         artist: urlParams.get('artist') || ''
       };
@@ -87,17 +88,29 @@
 
     // 加载专辑信息
     async function loadAlbumInfo() {
-      const { album, artist } = getUrlParams();
-      if (!album) {
+      const { id, album, artist } = getUrlParams();
+      if (!id && !album) {
         document.getElementById('albumTitle').textContent = '专辑信息加载失败';
         return;
       }
 
       try {
+        // 优先使用专辑ID获取专辑信息，确保地址固定
+        if (id) {
+          const response = await fetch(`/api/album_by_id?id=${id}`);
+          if (response.ok) {
+            const albumInfo = await response.json();
+            document.getElementById('albumTitle').textContent = albumInfo.name;
+            document.getElementById('albumArtist').textContent = albumInfo.artist || '未知艺术家';
+            return { id, album: albumInfo.name, artist: albumInfo.artist };
+          }
+        }
+        
+        // 如果ID获取失败或没有ID，使用名称参数（向后兼容）
         document.getElementById('albumTitle').textContent = album;
         document.getElementById('albumArtist').textContent = artist || '未知艺术家';
         
-        return { album, artist };
+        return { id, album, artist };
       } catch (error) {
         console.error('加载专辑信息失败:', error);
         document.getElementById('albumTitle').textContent = '专辑信息加载失败';
@@ -106,11 +119,18 @@
 
     // 加载专辑歌曲列表
     async function loadAlbumSongs() {
-      const { album, artist } = getUrlParams();
-      if (!album) return;
+      const { id, album, artist } = getUrlParams();
+      if (!id && !album) return;
 
       try {
-        const response = await fetch(`/api/album_tracks?album=${encodeURIComponent(album)}&artist=${encodeURIComponent(artist)}`);
+        // 优先使用专辑ID获取歌曲列表
+        let response;
+        if (id) {
+          response = await fetch(`/api/album_tracks_by_id?id=${id}`);
+        } else {
+          response = await fetch(`/api/album_tracks?album=${encodeURIComponent(album)}&artist=${encodeURIComponent(artist)}`);
+        }
+        
         if (!response.ok) throw new Error('歌曲列表加载失败');
         const songs = await response.json();
         
@@ -150,7 +170,7 @@
             <div class="song-item" data-song-id="${song.id}">
               <span class="song-index">${index + 1}</span>
               <div class="song-info">
-                <div class="song-title">${song.title || '未知标题'}</div>
+                <div class="song-title"><a href="/song?id=${song.id}" style="color: inherit; text-decoration: none; transition: color 0.3s ease;">${song.title || '未知标题'}</a></div>
                 <div class="song-album">${song.artist || '未知艺术家'}</div>
               </div>
               <div class="song-actions">
@@ -328,6 +348,11 @@
       const min = Math.floor(seconds / 60);
       const sec = Math.floor(seconds % 60);
       return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
     }
   </script>
 </body>

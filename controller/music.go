@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"MusicPlayerWeb/db"
 	"MusicPlayerWeb/service"
 )
 
@@ -129,6 +130,48 @@ func HandleAlbumTracks(w http.ResponseWriter, r *http.Request) {
 	list, err := service.ListAlbumTracks(album, artist)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(list)
+}
+
+// GET /api/album_by_id?id=...
+func HandleAlbumByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	idStr := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id < 1 {
+		writeErr(w, http.StatusBadRequest, "invalid album id")
+		return
+	}
+	album, err := service.GetAlbumByID(id)
+	if err != nil {
+		writeErr(w, http.StatusNotFound, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(album)
+}
+
+// GET /api/album_tracks_by_id?id=...
+func HandleAlbumTracksByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	idStr := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id < 1 {
+		writeErr(w, http.StatusBadRequest, "invalid album id")
+		return
+	}
+	list, err := service.ListAlbumTracksByID(id)
+	if err != nil {
+		writeErr(w, http.StatusNotFound, err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -517,4 +560,346 @@ func HandleUpdateMusicDir(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Music directory updated successfully",
 	})
+}
+
+// GET /api/comments?song_id=...
+func HandleGetComments(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	
+	songIDStr := r.URL.Query().Get("song_id")
+	songID, err := strconv.Atoi(songIDStr)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid song id")
+		return
+	}
+	
+	comments, err := service.GetSongComments(songID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(comments)
+}
+
+// POST /api/comments
+func HandleAddComment(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		SongID int    `json:"song_id"`
+		Content string `json:"content"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	
+	if request.Content == "" {
+		writeErr(w, http.StatusBadRequest, "comment content cannot be empty")
+		return
+	}
+	
+	// 获取当前用户ID（暂时使用默认用户ID）
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErr(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+	
+	comment, err := service.AddComment(request.SongID, userID, request.Content)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(comment)
+}
+
+// GET /api/check_auth
+func HandleCheckAuth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"authenticated": false,
+			"user_id": 0,
+			"user": nil,
+		})
+		return
+	}
+	
+	// 获取用户信息（从数据库获取最新数据）
+	userInfo, err := db.GetUserProfile(userID)
+	if err != nil {
+		// 如果数据库获取失败，尝试从邮箱获取用户信息
+		// 这里简化处理，实际应该从cookie中获取邮箱信息
+		// 暂时使用默认信息，但避免使用"用户+ID"的格式
+		userInfo = map[string]interface{}{
+			"id":       userID,
+			"nickname": "用户",
+			"email":    "",
+		}
+	} else {
+		// 确保昵称不为空，如果为空则使用账号作为初始昵称
+		if nickname, ok := userInfo["nickname"].(string); !ok || nickname == "" {
+			// 尝试从邮箱获取账号信息作为昵称
+			if email, ok := userInfo["email"].(string); ok && email != "" {
+				userInfo["nickname"] = email
+			} else {
+				userInfo["nickname"] = "用户"
+			}
+		}
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"authenticated": true,
+		"user_id": userID,
+		"user": userInfo,
+	})
+}
+
+// POST /api/update_profile - 更新个人资料
+func HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	
+	var request struct {
+		Nickname string `json:"nickname"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	
+	if request.Nickname == "" {
+		writeErr(w, http.StatusBadRequest, "nickname cannot be empty")
+		return
+	}
+	
+	// 获取当前用户ID
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErr(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+	
+	// 更新用户昵称到数据库
+	if err := db.UpdateUserNickname(userID, request.Nickname); err != nil {
+		writeErr(w, http.StatusInternalServerError, "更新昵称失败: "+err.Error())
+		return
+	}
+	
+	// 获取更新后的用户信息
+	userInfo, err := db.GetUserProfile(userID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "获取用户信息失败: "+err.Error())
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "个人资料更新成功",
+		"user": userInfo,
+	})
+}
+
+// HandleComments 统一的评论处理函数，支持 GET 和 POST 请求
+func HandleComments(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		HandleGetComments(w, r)
+	case http.MethodPost:
+		HandleAddComment(w, r)
+	default:
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// 收藏相关API
+func HandleFavorites(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		HandleGetFavorites(w, r)
+	case http.MethodPost:
+		HandleAddFavorite(w, r)
+	default:
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// GET /api/favorites - 获取用户收藏列表
+func HandleGetFavorites(w http.ResponseWriter, r *http.Request) {
+	// 获取当前用户ID
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErr(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	// 获取用户收藏列表
+	favorites, err := service.GetUserFavorites(userID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(favorites)
+}
+
+// POST /api/favorites - 添加收藏
+func HandleAddFavorite(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		SongID     string `json:"song_id"`
+		SongTitle  string `json:"song_title"`
+		SongArtist string `json:"song_artist"`
+		SongAlbum  string `json:"song_album"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// 验证必要字段
+	if req.SongID == "" || req.SongTitle == "" || req.SongArtist == "" {
+		writeErr(w, http.StatusBadRequest, "missing required fields")
+		return
+	}
+
+	// 获取当前用户ID
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErr(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	// 添加收藏
+	err = service.AddUserFavorite(userID, req.SongID, req.SongTitle, req.SongArtist, req.SongAlbum)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "收藏成功"})
+}
+
+// DELETE /api/favorites/{song_id} - 取消收藏
+func HandleDeleteFavorite(w http.ResponseWriter, r *http.Request) {
+	// 从URL路径中提取song_id
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) < 4 {
+		writeErr(w, http.StatusBadRequest, "invalid song id")
+		return
+	}
+	songID := pathParts[3]
+
+	if songID == "" {
+		writeErr(w, http.StatusBadRequest, "song id required")
+		return
+	}
+
+	// 获取当前用户ID
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErr(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	// 删除收藏
+	err = service.DeleteUserFavorite(userID, songID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "取消收藏成功"})
+}
+
+// GET /api/favorites/check - 检查歌曲是否已收藏
+func HandleCheckFavorite(w http.ResponseWriter, r *http.Request) {
+	songID := r.URL.Query().Get("song_id")
+	if songID == "" {
+		writeErr(w, http.StatusBadRequest, "song_id parameter required")
+		return
+	}
+
+	// 获取当前用户ID
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErr(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	// 检查收藏状态
+	isFavorited, err := service.CheckUserFavorite(userID, songID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]bool{"isFavorited": isFavorited})
+}
+
+// 处理单个收藏项的路由
+func HandleFavoriteItem(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodDelete:
+		HandleDeleteFavorite(w, r)
+	default:
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// GET /api/song_info?id=... - 获取单个歌曲的完整信息
+func HandleSongInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	
+	idStr := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id < 0 {
+		writeErr(w, http.StatusBadRequest, "invalid song id")
+		return
+	}
+	
+	track, err := service.GetTrack(id)
+	if err != nil {
+		writeErr(w, http.StatusNotFound, err.Error())
+		return
+	}
+	
+	// 返回歌曲的完整信息
+	songInfo := map[string]interface{}{
+		"id":        track.ID,
+		"title":     track.Title,
+		"artist":    track.Artist,
+		"album":     track.Album,
+		"hasCover":  track.HasCover,
+		"hasLyrics": track.HasLyrics,
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(songInfo)
 }

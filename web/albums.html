@@ -246,7 +246,7 @@
         }
         
         grid.innerHTML = albums.map(album => `
-          <a class="card album-card" href="/album?album=${encodeURIComponent(album.name)}&artist=${encodeURIComponent(album.artist)}">
+          <a class="card album-card" href="/album?id=${album.id}&album=${encodeURIComponent(album.name)}&artist=${encodeURIComponent(album.artist)}">
             <div class="thumb" style="background-image:url('${album.cover}')"></div>
             <div class="card-info">
               <h3>${album.name}</h3>
@@ -313,6 +313,11 @@
         }, 300);
       });
     });
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
+    }
   </script>
   <script src="/static/app.js"></script>
 </body>

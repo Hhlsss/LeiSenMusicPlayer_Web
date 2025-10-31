@@ -12,7 +12,8 @@
       <a href="/">我的音乐</a>
       <a href="/artists">歌手</a>
       <a href="/albums">专辑</a>
-      <a href="#" id="playlistsBtn">我的歌单</a>
+      <a href="/favorites">我的收藏</a>
+      <a href="/profile">个人中心</a>
     </nav>
     <div class="search">
       <input type="text" placeholder="搜索歌曲/歌手/专辑" />
@@ -36,11 +37,6 @@
       <button class="carousel-btn prev">&#10094;</button>
       <button class="carousel-btn next">&#10095;</button>
     </div>
-    <aside class="client-tip">
-      <h3>客户端下载</h3>
-      <p>PC、iPhone、Android、Mac客户端可用</p>
-      <a class="primary" href="#">立即下载</a>
-    </aside>
   </section>
 
   <main class="content">
@@ -104,20 +100,19 @@
     </section>
 
     <aside class="sidebar">
-      <div class="vip">
-        <h3>黑胶VIP</h3>
-        <p>畅享高音质、专属特权</p>
-        <button class="primary">开通VIP</button>
-      </div>
-
-      <div class="artists">
-        <h3>入驻歌手</h3>
-        <ul>
-          <li>张惠妹aMEI</li>
-          <li>吴莫愁Momo</li>
-          <li>孙楠</li>
-          <li>霍尊</li>
-        </ul>
+      <div class="ai-assistant">
+        <h3>智能AI助手</h3>
+        <div class="ai-chat-container">
+          <div class="ai-messages" id="aiMessages">
+            <div class="ai-message ai-bot">
+              <div class="message-content">你好！我是你的音乐AI助手，我可以帮你推荐歌曲、查找歌词、了解音乐知识等。有什么可以帮你的吗？</div>
+            </div>
+          </div>
+          <div class="ai-input-container">
+            <input type="text" id="aiInput" placeholder="输入你的问题..." class="ai-input" />
+            <button id="aiSend" class="ai-send-btn">发送</button>
+          </div>
+        </div>
       </div>
     </aside>
   </main>
@@ -319,6 +314,128 @@
         .catch(error => {
           console.error('获取音乐目录失败:', error);
         });
+    });
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
+    }
+
+    // AI助手功能
+    document.addEventListener('DOMContentLoaded', () => {
+      const aiMessages = document.getElementById('aiMessages');
+      const aiInput = document.getElementById('aiInput');
+      const aiSend = document.getElementById('aiSend');
+
+      // 发送消息函数
+      function sendMessage() {
+        const message = aiInput.value.trim();
+        if (!message) return;
+
+        // 添加用户消息
+        addMessage(message, 'user');
+        aiInput.value = '';
+        aiSend.disabled = true;
+
+        // 模拟AI回复
+        setTimeout(() => {
+          const aiResponse = generateAIResponse(message);
+          addMessage(aiResponse, 'bot');
+          aiSend.disabled = false;
+          aiInput.focus();
+        }, 1000);
+      }
+
+      // 添加消息到聊天框
+      function addMessage(content, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `ai-message ai-${sender}`;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = content;
+        
+        messageDiv.appendChild(contentDiv);
+        aiMessages.appendChild(messageDiv);
+        
+        // 滚动到底部
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+      }
+
+      // 生成AI回复
+      function generateAIResponse(userMessage) {
+        const lowerMessage = userMessage.toLowerCase();
+        
+        // 音乐推荐相关
+        if (lowerMessage.includes('推荐') || lowerMessage.includes('推荐歌曲')) {
+          const genres = ['流行', '摇滚', '电子', '民谣', 'R&B'];
+          const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+          return `根据你的喜好，我推荐一些${randomGenre}音乐：
+1. 热门${randomGenre}歌曲
+2. 经典${randomGenre}金曲
+3. 最新${randomGenre}发布
+你可以在首页的推荐区域找到更多精彩内容！`;
+        }
+        
+        // 歌词查询
+        if (lowerMessage.includes('歌词') || lowerMessage.includes('歌词查询')) {
+          return `要查询歌词，你可以：
+1. 在搜索框输入歌曲名
+2. 点击歌曲进入播放页面查看完整歌词
+3. 歌词会随着音乐播放实时高亮显示`;
+        }
+        
+        // 歌手信息
+        if (lowerMessage.includes('歌手') || lowerMessage.includes('艺人')) {
+          return `你可以通过以下方式了解歌手信息：
+1. 点击导航栏的"歌手"查看所有歌手
+2. 搜索特定歌手名
+3. 查看歌手的专辑和热门歌曲`;
+        }
+        
+        // 专辑信息
+        if (lowerMessage.includes('专辑')) {
+          return `专辑功能说明：
+1. 在"专辑"页面浏览所有专辑
+2. 点击专辑查看包含的歌曲
+3. 支持按风格、年代筛选专辑`;
+        }
+        
+        // 播放列表
+        if (lowerMessage.includes('歌单') || lowerMessage.includes('播放列表')) {
+          return `歌单管理功能：
+1. 创建个人歌单
+2. 导入本地音乐文件
+3. 收藏喜欢的歌曲到"我的收藏"
+4. 在"我的音乐"中管理所有歌单`;
+        }
+        
+        // 默认回复
+        const defaultResponses = [
+          '我主要专注于音乐相关的帮助，比如歌曲推荐、歌词查询、歌手信息等。',
+          '你可以问我关于音乐推荐、歌词查找、歌手信息等问题。',
+          '作为音乐助手，我擅长帮你发现好音乐、了解音乐知识。',
+          '试试问我："推荐一些流行歌曲" 或 "如何查找歌词？"'
+        ];
+        
+        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+      }
+
+      // 事件监听
+      aiSend.addEventListener('click', sendMessage);
+      
+      aiInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+
+      aiInput.addEventListener('input', () => {
+        aiSend.disabled = !aiInput.value.trim();
+      });
+
+      // 初始禁用发送按钮
+      aiSend.disabled = true;
     });
   </script>
 </body>

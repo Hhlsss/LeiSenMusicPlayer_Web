@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>音乐上传 - 雷森音乐</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <style>
+    .upload-container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: all 0.3s;
+      background: #fafafa;
+    }
+
+    .upload-area.dragover {
+      border-color: #d32f2f;
+      background: #ffebee;
+    }
+
+    .upload-area:hover {
+      border-color: #999;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .upload-text h3 {
+      margin: 0 0 8px 0;
+      color: #333;
+    }
+
+    .upload-text p {
+      margin: 0 0 16px 0;
+      color: #666;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .upload-btn {
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .upload-btn:hover {
+      background: #b71c1c;
+      transform: translateY(-1px);
+    }
+
+    .upload-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .file-list {
+      margin-top: 20px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      background: white;
+    }
+
+    .file-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .file-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .file-size {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .file-status {
+      margin-left: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-pending {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .status-uploading {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .status-completed {
+      background: #e8f5e8;
+      color: #388e3c;
+    }
+
+    .status-error {
+      background: #ffebee;
+      color: #d32f2f;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #f0f0f0;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #d32f2f;
+      transition: width 0.3s;
+    }
+
+    .upload-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .start-upload {
+      background: #d32f2f;
+      color: white;
+    }
+
+    .start-upload:hover:not(:disabled) {
+      background: #b71c1c;
+    }
+
+    .clear-all {
+      background: #f5f5f5;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .clear-all:hover {
+      background: #e0e0e0;
+    }
+
+    .upload-stats {
+      margin-top: 20px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .stats-visible {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/favorites">我的收藏</a>
+      <a href="/upload">音乐上传</a>
+      <a href="/profile">个人中心</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+    <div class="user">
+      <span id="username">未登录</span>
+      <button id="loginBtn" class="primary">登录</button>
+      <button id="logoutBtn" class="secondary" style="display:none">退出</button>
+    </div>
+  </header>
+
+  <div class="upload-container">
+    <h1>音乐上传到Supabase</h1>
+    <p>将本地音乐文件上传到云端数据库，支持MP3、FLAC、WAV等格式</p>
+
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">🎵</div>
+      <div class="upload-text">
+        <h3>拖放音乐文件到这里</h3>
+        <p>支持单个或多个文件上传，最大支持100MB</p>
+        <input type="file" id="fileInput" class="file-input" multiple accept="audio/*" />
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+          选择文件
+        </button>
+      </div>
+    </div>
+
+    <div class="file-list" id="fileList">
+      <!-- 文件列表将在这里动态生成 -->
+    </div>
+
+    <div class="upload-actions">
+      <button class="action-btn start-upload" id="startUpload" disabled>
+        开始上传
+      </button>
+      <button class="action-btn clear-all" id="clearAll">
+        清空列表
+      </button>
+    </div>
+
+    <div class="upload-stats" id="uploadStats">
+      <h4>上传统计</h4>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value" id="totalFiles">0</div>
+          <div class="stat-label">总文件数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="uploadedFiles">0</div>
+          <div class="stat-label">已上传</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="failedFiles">0</div>
+          <div class="stat-label">失败</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    // 上传功能实现
+    class MusicUploader {
+      constructor() {
+        this.files = [];
+        this.isUploading = false;
+        this.init();
+      }
+
+      init() {
+        this.uploadArea = document.getElementById('uploadArea');
+        this.fileInput = document.getElementById('fileInput');
+        this.fileList = document.getElementById('fileList');
+        this.startUpload = document.getElementById('startUpload');
+        this.clearAll = document.getElementById('clearAll');
+        this.uploadStats = document.getElementById('uploadStats');
+        
+        this.bindEvents();
+        this.updateUI();
+      }
+
+      bindEvents() {
+        // 拖放事件
+        this.uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.add('dragover');
+        });
+
+        this.uploadArea.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.remove('dragover');
+        });
+
+        this.uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          this.uploadArea.classList.remove('dragover');
+          this.handleFiles(e.dataTransfer.files);
+        });
+
+        // 文件选择事件
+        this.fileInput.addEventListener('change', (e) => {
+          this.handleFiles(e.target.files);
+        });
+
+        // 按钮事件
+        this.startUpload.addEventListener('click', () => {
+          this.startUploadProcess();
+        });
+
+        this.clearAll.addEventListener('click', () => {
+          this.clearFiles();
+        });
+      }
+
+      handleFiles(fileList) {
+        const newFiles = Array.from(fileList).filter(file => {
+          // 检查文件类型
+          if (!file.type.startsWith('audio/')) {
+            alert(`文件 ${file.name} 不是音频文件，已跳过`);
+            return false;
+          }
+
+          // 检查文件大小（最大100MB）
+          if (file.size > 100 * 1024 * 1024) {
+            alert(`文件 ${file.name} 超过100MB限制，已跳过`);
+            return false;
+          }
+
+          // 检查是否已存在
+          if (this.files.some(f => f.name === file.name && f.size === file.size)) {
+            alert(`文件 ${file.name} 已存在列表中，已跳过`);
+            return false;
+          }
+
+          return true;
+        });
+
+        this.files.push(...newFiles.map(file => ({
+          file,
+          id: this.generateId(),
+          status: 'pending',
+          progress: 0,
+          error: null
+        })));
+
+        this.updateUI();
+      }
+
+      generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+      }
+
+      updateUI() {
+        this.renderFileList();
+        this.startUpload.disabled = this.files.length === 0 || this.isUploading;
+        
+        if (this.files.length > 0) {
+          this.uploadStats.classList.add('stats-visible');
+          this.updateStats();
+        } else {
+          this.uploadStats.classList.remove('stats-visible');
+        }
+      }
+
+      renderFileList() {
+        this.fileList.innerHTML = this.files.map(fileItem => `
+          <div class="file-item" data-id="${fileItem.id}">
+            <div class="file-info">
+              <div class="file-name">${fileItem.file.name}</div>
+              <div class="file-size">${this.formatFileSize(fileItem.file.size)}</div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${fileItem.progress}%"></div>
+              </div>
+            </div>
+            <div class="file-status status-${fileItem.status}">
+              ${this.getStatusText(fileItem.status)}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+
+      getStatusText(status) {
+        const statusMap = {
+          'pending': '等待上传',
+          'uploading': '上传中',
+          'completed': '上传完成',
+          'error': '上传失败'
+        };
+        return statusMap[status] || status;
+      }
+
+      updateStats() {
+        const total = this.files.length;
+        const uploaded = this.files.filter(f => f.status === 'completed').length;
+        const failed = this.files.filter(f => f.status === 'error').length;
+
+        document.getElementById('totalFiles').textContent = total;
+        document.getElementById('uploadedFiles').textContent = uploaded;
+        document.getElementById('failedFiles').textContent = failed;
+      }
+
+      async startUploadProcess() {
+        if (this.isUploading) return;
+
+        this.isUploading = true;
+        this.startUpload.disabled = true;
+        this.startUpload.textContent = '上传中...';
+
+        // 检查登录状态
+        const isLoggedIn = await this.checkAuth();
+        if (!isLoggedIn) {
+          alert('请先登录后再上传音乐');
+          this.isUploading = false;
+          this.startUpload.disabled = false;
+          this.startUpload.textContent = '开始上传';
+          return;
+        }
+
+        // 逐个上传文件
+        for (let i = 0; i < this.files.length; i++) {
+          const fileItem = this.files[i];
+          if (fileItem.status === 'pending') {
+            await this.uploadFile(fileItem);
+          }
+        }
+
+        this.isUploading = false;
+        this.startUpload.disabled = this.files.length === 0;
+        this.startUpload.textContent = '开始上传';
+
+        // 显示上传结果
+        const completedCount = this.files.filter(f => f.status === 'completed').length;
+        if (completedCount > 0) {
+          alert(`上传完成！成功上传 ${completedCount} 个文件`);
+        }
+      }
+
+      async checkAuth() {
+        try {
+          const response = await fetch('/api/check_auth');
+          const data = await response.json();
+          return data.authenticated;
+        } catch (error) {
+          console.error('检查认证状态失败:', error);
+          return false;
+        }
+      }
+
+      async uploadFile(fileItem) {
+        fileItem.status = 'uploading';
+        this.updateUI();
+
+        try {
+          const formData = new FormData();
+          formData.append('file', fileItem.file);
+          formData.append('fileName', fileItem.file.name);
+          formData.append('fileSize', fileItem.file.size.toString());
+
+          const response = await fetch('/api/upload/music', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) {
+            throw new Error(`上传失败: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          
+          if (result.success) {
+            fileItem.status = 'completed';
+            fileItem.progress = 100;
+          } else {
+            throw new Error(result.error || '上传失败');
+          }
+
+        } catch (error) {
+          console.error('上传文件失败:', error);
+          fileItem.status = 'error';
+          fileItem.error = error.message;
+        }
+
+        this.updateUI();
+      }
+
+      clearFiles() {
+        if (this.isUploading) {
+          if (!confirm('上传正在进行中，确定要清空列表吗？')) {
+            return;
+          }
+        }
+
+        this.files = [];
+        this.isUploading = false;
+        this.updateUI();
+      }
+    }
+
+    // 初始化上传器
+    document.addEventListener('DOMContentLoaded', () => {
+      new MusicUploader();
+      
+      // 初始化认证状态
+      if (window.authManager) {
+        window.authManager.initAllPagesAuth();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人中心 - 雷森音乐</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/favorites">我的收藏</a>
+      <a href="/profile" class="active">个人中心</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+    <div class="user-actions">
+      <button class="primary">创建歌单</button>
+      <button id="loginOpen">登录</button>
+      <button id="registerOpen">注册</button>
+      <button id="logoutBtn" class="hidden">退出</button>
+      <span id="userNickname" class="hidden nickname"></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="section-header">
+      <h2>个人中心</h2>
+    </div>
+
+    <div class="profile-container">
+      <!-- 登录状态检查 -->
+      <div id="loginRequired" class="login-required hidden">
+        <div class="login-prompt">
+          <h3>请先登录</h3>
+          <p>您需要登录后才能访问个人中心</p>
+          <button id="goToLogin" class="primary">立即登录</button>
+        </div>
+      </div>
+
+      <!-- 个人资料编辑 -->
+      <div id="profileContent" class="profile-content hidden">
+        <div class="profile-card">
+          <h3>基本信息</h3>
+          <form id="profileForm" class="profile-form">
+            <div class="form-group">
+              <label for="nickname">昵称</label>
+              <input type="text" id="nickname" name="nickname" placeholder="请输入昵称" required />
+              <small>昵称将显示在评论和个人资料中</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="email">邮箱</label>
+              <input type="email" id="email" name="email" placeholder="请输入邮箱" readonly />
+              <small>邮箱用于登录和接收通知</small>
+            </div>
+            
+            <div class="form-group hidden">
+              <label for="userid">用户ID</label>
+              <input type="text" id="userid" name="userid" readonly />
+              <small>系统自动生成的唯一标识</small>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="primary">保存修改</button>
+              <button type="button" id="cancelEdit" class="secondary">取消</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="profile-stats">
+          <h3>个人统计</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number" id="favoritesCount">0</span>
+              <span class="stat-label">收藏歌曲</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="commentsCount">0</span>
+              <span class="stat-label">发表评论</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="playlistsCount">0</span>
+              <span class="stat-label">创建歌单</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 登录/注册模态框 -->
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <div id="loginTitle">账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="loginAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="primary full-width">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <div id="registerTitle">账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="registerAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="primary full-width">注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
+  </script>
+  <script src="/static/app.js"></script>
+  <script>
+    // 个人中心功能
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginRequired = document.getElementById('loginRequired');
+      const profileContent = document.getElementById('profileContent');
+      const profileForm = document.getElementById('profileForm');
+      const goToLogin = document.getElementById('goToLogin');
+      const cancelEdit = document.getElementById('cancelEdit');
+
+      // 检查登录状态
+      async function checkAuthStatus() {
+        try {
+          const response = await fetch('/api/check_auth');
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.authenticated) {
+              // 用户已登录，显示个人资料
+              loginRequired.classList.add('hidden');
+              profileContent.classList.remove('hidden');
+              loadProfileData(data.user);
+            } else {
+              // 用户未登录，显示登录提示
+              loginRequired.classList.remove('hidden');
+              profileContent.classList.add('hidden');
+            }
+          }
+        } catch (error) {
+          console.error('检查登录状态失败:', error);
+          loginRequired.classList.remove('hidden');
+          profileContent.classList.add('hidden');
+        }
+      }
+
+      // 加载个人资料数据
+      async function loadProfileData(userInfo) {
+        // 使用数据库中的真实昵称，如果没有昵称则使用账号作为初始昵称
+        const nickname = userInfo.nickname || userInfo.email || userInfo.account || '用户';
+        document.getElementById('nickname').value = nickname;
+        document.getElementById('email').value = userInfo.email || '未设置';
+        document.getElementById('userid').value = userInfo.id || '未知';
+        
+        // 加载统计信息
+        await loadStatistics(userInfo.id);
+      }
+
+      // 加载用户统计信息
+      async function loadStatistics(userId) {
+        try {
+          // 加载收藏数量
+          const favoritesResponse = await fetch('/api/favorites');
+          if (favoritesResponse.ok) {
+            const favorites = await favoritesResponse.json();
+            document.getElementById('favoritesCount').textContent = favorites.length || 0;
+          }
+          
+          // 加载评论数量（需要实现评论统计API）
+          document.getElementById('commentsCount').textContent = '0';
+          
+          // 加载歌单数量（需要实现歌单统计API）
+          document.getElementById('playlistsCount').textContent = '0';
+          
+        } catch (error) {
+          console.error('加载统计信息失败:', error);
+        }
+      }
+
+      // 保存个人资料
+      profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const nickname = document.getElementById('nickname').value.trim();
+        
+        if (!nickname) {
+          alert('请输入昵称');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/api/update_profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              nickname: nickname
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            alert('个人资料更新成功！');
+            
+            // 重新从数据库获取最新用户信息
+            if (window.authManager) {
+              // 重新检查认证状态，获取最新的用户信息
+              const authData = await window.authManager.checkAuthStatus();
+              
+              // 更新本地存储的用户信息
+              window.authManager.setCurrentUser(authData.user);
+              
+              // 触发用户信息更新事件，通知所有页面更新状态
+              window.dispatchEvent(new CustomEvent('userProfileUpdated', { detail: authData.user }));
+              
+              // 更新导航栏显示（使用数据库中的最新数据）
+              window.authManager.updateNavbarStatus(authData.authenticated, authData.user);
+              
+              // 重新加载个人资料数据
+              if (authData.authenticated && authData.user) {
+                await loadProfileData(authData.user);
+              }
+            }
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '更新失败');
+          }
+        } catch (error) {
+          console.error('更新个人资料失败:', error);
+          alert('更新失败：' + error.message);
+        }
+      });
+
+      // 取消编辑
+      cancelEdit?.addEventListener('click', function() {
+        checkAuthStatus(); // 重新加载原始数据
+      });
+
+      // 跳转到登录
+      goToLogin?.addEventListener('click', function() {
+        window.location.href = '/';
+      });
+
+      // 初始化
+      checkAuthStatus();
+    });
+
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
+    }
+  </script>
+</body>
+</html>

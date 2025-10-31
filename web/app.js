@@ -1,3 +1,106 @@
+// 全局登录状态管理
+window.authManager = {
+  // 检查登录状态
+  async checkAuthStatus() {
+    try {
+      const response = await fetch('/api/check_auth');
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      console.error('检查登录状态失败:', error);
+    }
+    return { authenticated: false, user: null };
+  },
+
+  // 更新导航栏登录状态
+  updateNavbarStatus(isLoggedIn, userInfo = null) {
+    const loginBtn = document.getElementById('loginOpen');
+    const registerBtn = document.getElementById('registerOpen');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const nicknameEl = document.getElementById('userNickname');
+
+    if (loginBtn) loginBtn.style.display = isLoggedIn ? 'none' : '';
+    if (registerBtn) registerBtn.style.display = isLoggedIn ? 'none' : '';
+    if (logoutBtn) {
+      logoutBtn.style.display = isLoggedIn ? '' : 'none';
+      logoutBtn.classList.toggle('hidden', !isLoggedIn);
+    }
+    
+    if (nicknameEl) {
+      if (isLoggedIn && userInfo) {
+        // 使用数据库中的真实昵称，如果没有昵称则使用账号作为初始昵称
+        const nickname = userInfo.nickname || userInfo.email || userInfo.account || '用户';
+        nicknameEl.textContent = nickname;
+        nicknameEl.style.display = '';
+        nicknameEl.classList.remove('hidden');
+      } else {
+        nicknameEl.style.display = 'none';
+        nicknameEl.classList.add('hidden');
+      }
+    }
+  },
+
+  // 初始化所有页面的登录状态
+  async initAllPagesAuth() {
+    const authData = await this.checkAuthStatus();
+    this.updateNavbarStatus(authData.authenticated, authData.user);
+    
+    // 设置退出登录事件
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await fetch('/api/logout', { method: 'POST' });
+          
+          // 清除本地存储的用户信息
+          localStorage.removeItem('currentUser');
+          
+          // 触发退出登录事件，通知所有页面更新状态
+          window.dispatchEvent(new CustomEvent('userLogout'));
+          
+          // 更新导航栏状态
+          window.authManager.updateNavbarStatus(false);
+          
+          // 显示登录/注册按钮
+          const loginBtn = document.getElementById('loginOpen');
+          const registerBtn = document.getElementById('registerOpen');
+          if (loginBtn) loginBtn.style.display = '';
+          if (registerBtn) registerBtn.style.display = '';
+        } catch (error) {
+          console.error('退出登录失败:', error);
+        }
+      });
+    }
+    
+    // 监听用户信息更新事件
+    window.addEventListener('userProfileUpdated', (event) => {
+      this.updateNavbarStatus(true, event.detail);
+    });
+  },
+
+  // 获取当前用户信息
+  getCurrentUser() {
+    try {
+      const userData = localStorage.getItem('currentUser');
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('获取当前用户信息失败:', error);
+      return null;
+    }
+  },
+
+  // 设置当前用户信息
+  setCurrentUser(user) {
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    } catch (error) {
+      console.error('保存用户信息失败:', error);
+    }
+  }
+};
+
 /* 轮播初始化（支持动态更新） */
 (function () {
   let initialized = false;
@@ -414,17 +517,27 @@
 // Supabase 初始化与会话监听
 (function () {
   try {
-    if (!window.supabase) return; // 非首页等无需 Supabase 的页面可忽略
+    // 检查是否在支持 Supabase 的页面
+    const loginBtn = document.getElementById('loginOpen');
+    if (!loginBtn) return; // 非登录页面无需初始化
+    
     const url = window.__SUPABASE_URL__;
     const key = window.__SUPABASE_ANON_KEY__;
+    
     if (!url || !key || url === 'YOUR_SUPABASE_URL' || key === 'YOUR_SUPABASE_ANON_KEY') {
       console.warn('Supabase 未配置，跳过初始化');
       return;
     }
+    
+    // 确保 supabase 库已加载
+    if (typeof window.supabase === 'undefined') {
+      console.error('Supabase JS 库未加载');
+      return;
+    }
+    
     const client = window.supabase.createClient(url, key);
     window.supabaseClient = client;
 
-    const loginBtn = document.getElementById('loginOpen');
     const regBtn = document.getElementById('registerOpen');
     const logoutBtn = document.getElementById('logoutBtn');
     const nickEl = document.getElementById('userNickname');
@@ -505,7 +618,7 @@
     }
   });
 
-  // 使用 Supabase 账号登录（邮箱/密码）
+  // 使用自定义账号登录（邮箱/密码）
   document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const account = document.getElementById("loginAccount").value.trim();
@@ -516,11 +629,37 @@
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "登录中…"; }
 
     try {
-      if (!window.supabaseClient) throw new Error('Supabase 未初始化');
-      const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email: account, password: pwd });
-      if (error) throw error;
-      alert("登录成功");
-      closeModal(loginModal);
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account, password: pwd })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        alert("登录成功");
+        closeModal(loginModal);
+        
+        // 更新本地存储的用户信息
+        window.authManager.setCurrentUser({
+          id: data.user_id,
+          nickname: data.nickname,
+          email: account
+        });
+        
+        // 触发登录事件，通知所有页面更新状态
+        window.dispatchEvent(new CustomEvent('userLogin', { detail: data }));
+        
+        // 更新导航栏状态
+        window.authManager.updateNavbarStatus(true, {
+          id: data.user_id,
+          nickname: data.nickname,
+          email: account
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '登录失败');
+      }
     } catch (err) {
       alert("登录失败：" + (err?.message || "未知错误"));
     } finally {
@@ -534,14 +673,221 @@
     const account = document.getElementById("registerAccount").value.trim();
     const pwd = document.getElementById("registerPassword").value;
     if (!account || !pwd) { alert("请输入账号和密码"); return; }
+    
+    const submitBtn = document.querySelector("#registerForm button[type='submit']");
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "注册中…"; }
+    
     try {
-      if (!window.supabaseClient) throw new Error('Supabase 未初始化');
-      const { data, error } = await window.supabaseClient.auth.signUp({ email: account, password: pwd });
-      if (error) throw error;
-      alert("注册成功，请前往邮箱完成验证（如开启邮箱确认）");
-      closeModal(registerModal);
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account, password: pwd })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        alert("注册成功，已自动登录");
+        closeModal(registerModal);
+        
+        // 更新本地存储的用户信息
+        window.authManager.setCurrentUser({
+          id: data.user_id,
+          nickname: data.nickname,
+          email: account
+        });
+        
+        // 触发登录事件，通知所有页面更新状态
+        window.dispatchEvent(new CustomEvent('userLogin', { detail: data }));
+        
+        // 更新导航栏状态
+        window.authManager.updateNavbarStatus(true, {
+          id: data.user_id,
+          nickname: data.nickname,
+          email: account
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '注册失败');
+      }
     } catch (err) {
       alert("注册失败：" + (err?.message || "未知错误"));
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "注册"; }
     }
   });
+})();
+
+// 歌曲详情页评论功能
+(function () {
+  // 检查是否在歌曲详情页
+  const url = new URL(window.location.href);
+  if (!url.pathname.endsWith("/song")) return;
+  
+  const songID = url.searchParams.get("id");
+  if (!songID) return;
+  
+  const loginStatus = document.getElementById('loginStatus');
+  const commentForm = document.getElementById('commentForm');
+  const commentInput = document.getElementById('commentInput');
+  const submitComment = document.getElementById('submitComment');
+  const commentsList = document.getElementById('commentsList');
+  const goToLogin = document.getElementById('goToLogin');
+  
+  // 检查用户登录状态
+  async function checkAuthStatus() {
+    try {
+      const response = await fetch('/api/check_auth');
+      if (!response.ok) {
+        throw new Error('HTTP error: ' + response.status);
+      }
+      const data = await response.json();
+      
+      if (data.authenticated) {
+        // 用户已登录，显示评论表单
+        loginStatus.classList.add('hidden');
+        commentForm.classList.remove('hidden');
+      } else {
+        // 用户未登录，显示登录提示
+        loginStatus.classList.remove('hidden');
+        commentForm.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('检查登录状态失败:', error);
+      // 默认显示登录提示
+      loginStatus.classList.remove('hidden');
+      commentForm.classList.add('hidden');
+    }
+  }
+  
+  // 加载评论
+  async function loadComments() {
+    try {
+      const response = await fetch(`/api/comments?song_id=${songID}`);
+      const comments = await response.json();
+      
+      if (Array.isArray(comments) && comments.length > 0) {
+        renderComments(comments);
+      } else {
+        commentsList.innerHTML = '<div class="no-comments">暂无评论，快来发表第一条评论吧！</div>';
+      }
+    } catch (error) {
+      console.error('加载评论失败:', error);
+      commentsList.innerHTML = '<div class="no-comments">加载评论失败，请稍后重试</div>';
+    }
+  }
+  
+  // 渲染评论列表
+  function renderComments(comments) {
+    commentsList.innerHTML = '';
+    
+    comments.forEach(comment => {
+      const commentElement = document.createElement('div');
+      commentElement.className = 'comment-item';
+      
+      // 使用后端返回的用户昵称，如果没有昵称则使用默认值
+      const userNickname = comment.nickname || comment.username || '用户' || '未知用户';
+      
+      // 安全处理日期
+      let commentTime = '未知时间';
+      try {
+        if (comment.created_at) {
+          commentTime = new Date(comment.created_at).toLocaleString('zh-CN');
+        }
+      } catch (error) {
+        console.error('日期解析错误:', error);
+        commentTime = comment.created_at || '未知时间';
+      }
+      
+      // 获取评论内容
+      const content = comment.content || '无内容';
+      
+      commentElement.innerHTML = `
+        <div class="comment-header">
+          <span class="comment-user">${userNickname}</span>
+          <span class="comment-time">${commentTime}</span>
+        </div>
+        <div class="comment-content">${escapeHtml(content)}</div>
+      `;
+      
+      commentsList.appendChild(commentElement);
+    });
+  }
+  
+  // HTML转义函数
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // 提交评论
+  async function handleSubmitComment() {
+    const content = commentInput.value.trim();
+    
+    if (!content) {
+      alert('请输入评论内容');
+      return;
+    }
+    
+    if (content.length > 500) {
+      alert('评论内容不能超过500字');
+      return;
+    }
+    
+    submitComment.disabled = true;
+    submitComment.textContent = '发表中...';
+    
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          song_id: parseInt(songID),
+          content: content
+        })
+      });
+      
+      if (response.ok) {
+        commentInput.value = '';
+        await loadComments(); // 重新加载评论列表
+        alert('评论发表成功！');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '发表评论失败');
+      }
+    } catch (error) {
+      console.error('发表评论失败:', error);
+      alert('发表评论失败：' + error.message);
+    } finally {
+      submitComment.disabled = false;
+      submitComment.textContent = '发表评论';
+    }
+  }
+  
+  // 事件监听
+  if (submitComment) {
+    submitComment.addEventListener('click', handleSubmitComment);
+  }
+  
+  if (commentInput) {
+    commentInput.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        handleSubmitComment();
+      }
+    });
+  }
+  
+  if (goToLogin) {
+    goToLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      // 跳转到首页进行登录
+      window.location.href = '/';
+    });
+  }
+  
+  // 初始化
+  checkAuthStatus();
+  loadComments();
 })();

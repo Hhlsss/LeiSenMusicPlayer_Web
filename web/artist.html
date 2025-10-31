@@ -162,7 +162,7 @@
                 <div class="song-item" data-song-id="${song.id}">
                   <span class="song-index">${index + 1}</span>
                   <div class="song-info">
-                    <div class="song-title">${song.title || '未知标题'}</div>
+                    <div class="song-title"><a href="/song?id=${song.id}" style="color: inherit; text-decoration: none; transition: color 0.3s ease;">${song.title || '未知标题'}</a></div>
                     <div class="song-album">${song.album || '未知专辑'}</div>
                   </div>
                   <div class="song-actions">
@@ -388,6 +388,11 @@
       const min = Math.floor(seconds / 60);
       const sec = Math.floor(seconds % 60);
       return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
     }
   </script>
 </body>

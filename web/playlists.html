@@ -258,6 +258,11 @@
           console.error('获取音乐目录失败:', error);
         });
     });
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
+    }
   </script>
 </body>
 </html>

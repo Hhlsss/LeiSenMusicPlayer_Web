@@ -304,6 +304,11 @@
         }, 300);
       });
     });
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
+    }
   </script>
   <script src="/static/app.js"></script>
 </body>

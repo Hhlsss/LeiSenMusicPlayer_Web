@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>我的收藏 - 雷森音乐</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">雷森音乐</div>
+    <nav class="nav">
+      <a href="/">我的音乐</a>
+      <a href="/artists">歌手</a>
+      <a href="/albums">专辑</a>
+      <a href="/favorites" class="active">我的收藏</a>
+      <a href="/profile">个人中心</a>
+    </nav>
+    <div class="search">
+      <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+    <div class="user-actions">
+      <button class="primary">创建歌单</button>
+      <button id="loginOpen">登录</button>
+      <button id="registerOpen">注册</button>
+      <button id="logoutBtn" class="hidden">退出</button>
+      <span id="userNickname" class="hidden nickname"></span>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="section-header">
+      <h2>我的收藏</h2>
+      <div class="tabs">
+        <a href="#" class="active">歌曲</a>
+        <a href="#">专辑</a>
+        <a href="#">歌手</a>
+      </div>
+    </div>
+
+    <!-- 登录提示 -->
+    <div id="loginPrompt" class="login-status" style="display: none;">
+      <p>请先<a href="#" id="loginPromptLink">登录</a>查看您的收藏歌曲</p>
+    </div>
+
+    <!-- 收藏歌曲列表 -->
+    <div id="favoritesContainer" style="display: none;">
+      <div class="songs-container">
+        <div class="song-item header">
+          <div class="song-index">#</div>
+          <div class="song-info">歌曲标题</div>
+          <div class="song-album">专辑</div>
+          <div class="song-actions">操作</div>
+        </div>
+        <div id="favoritesList">
+          <!-- 收藏歌曲将动态加载到这里 -->
+        </div>
+      </div>
+      
+      <!-- 空状态 -->
+      <div id="emptyFavorites" class="no-results" style="display: none;">
+        <h3>暂无收藏歌曲</h3>
+        <p>您还没有收藏任何歌曲，快去发现好听的音乐吧！</p>
+      </div>
+    </div>
+
+    <!-- 加载状态 -->
+    <div id="loadingFavorites" class="loading">
+      <p>正在加载收藏歌曲...</p>
+    </div>
+  </main>
+
+  <!-- 底部播放器 -->
+  <div class="player-bar">
+    <div class="player-left">
+      <img id="miniCover" class="mini-cover" src="" alt="封面" />
+      <div class="track">
+        <div class="title" id="currentTitle">未播放</div>
+        <div class="artist" id="currentArtist">-</div>
+      </div>
+    </div>
+    <div class="player-center">
+      <button id="prevBtn">⏮</button>
+      <button id="toggleBtn">▶</button>
+      <button id="nextBtn">⏭</button>
+    </div>
+    <div class="player-right">
+      <div class="time">
+        <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+      </div>
+      <input type="range" id="progress" min="0" max="100" value="0" />
+      <div class="volume-container">
+        <span class="volume-icon">🔊</span>
+        <input type="range" id="volume" min="0" max="100" value="50" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 登录/注册模态框 -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <span id="loginTitle">登录</span>
+      <button class="modal-close" aria-label="关闭登录窗口">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <div class="form-row">
+          <label for="loginAccount">邮箱</label>
+          <input type="text" id="loginAccount" placeholder="请输入邮箱" required />
+        </div>
+        <div class="form-row">
+          <label for="loginPassword">密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </div>
+        <button type="submit" class="btn-gradient full">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <span id="registerTitle">注册</span>
+      <button class="modal-close" aria-label="关闭注册窗口">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <div class="form-row">
+          <label for="registerAccount">邮箱</label>
+          <input type="text" id="registerAccount" placeholder="请输入邮箱" required />
+        </div>
+        <div class="form-row">
+          <label for="registerPassword">密码</label>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </div>
+        <button type="submit" class="btn-gradient full">注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
+  </script>
+  <script src="/static/app.js"></script>
+  <script>
+    // 收藏页面特定功能
+    let currentUser = null;
+    let favorites = [];
+
+    // 检查登录状态
+    async function checkLoginStatus() {
+      try {
+        const response = await fetch('/api/check_auth');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated) {
+            // 用户已登录
+            document.getElementById('loginPrompt').style.display = 'none';
+            document.getElementById('favoritesContainer').style.display = 'block';
+            document.getElementById('loadingFavorites').style.display = 'none';
+            
+            // 更新导航栏登录状态
+            updateNavbarLoginStatus(true);
+            
+            loadFavorites();
+          } else {
+            // 用户未登录
+            document.getElementById('loginPrompt').style.display = 'block';
+            document.getElementById('favoritesContainer').style.display = 'none';
+            document.getElementById('loadingFavorites').style.display = 'none';
+            
+            // 更新导航栏登录状态
+            updateNavbarLoginStatus(false);
+          }
+        } else {
+          throw new Error('认证检查失败');
+        }
+      } catch (error) {
+        console.error('检查登录状态失败:', error);
+        // 默认显示登录提示
+        document.getElementById('loginPrompt').style.display = 'block';
+        document.getElementById('favoritesContainer').style.display = 'none';
+        document.getElementById('loadingFavorites').style.display = 'none';
+        
+        updateNavbarLoginStatus(false);
+      }
+    }
+
+    // 更新导航栏登录状态（使用全局登录状态管理）
+    function updateNavbarLoginStatus(isLoggedIn) {
+      if (window.authManager) {
+        window.authManager.updateNavbarStatus(isLoggedIn);
+      }
+    }
+
+    // 加载收藏歌曲
+    async function loadFavorites() {
+      try {
+        const response = await fetch('/api/favorites');
+        if (response.ok) {
+          const favoritesData = await response.json();
+          
+          // 为每个收藏的歌曲获取完整信息
+          favorites = await Promise.all(favoritesData.map(async (fav) => {
+            try {
+              // 尝试从本地音乐库获取歌曲完整信息
+              const songInfoResponse = await fetch(`/api/song_info?id=${fav.song_id}`);
+              if (songInfoResponse.ok) {
+                const songInfo = await songInfoResponse.json();
+                return {
+                  ...fav,
+                  id: songInfo.id || parseInt(fav.song_id) || 0,
+                  title: songInfo.title || fav.song_title,
+                  artist: songInfo.artist || fav.song_artist,
+                  album: songInfo.album || fav.song_album,
+                  hasCover: songInfo.hasCover || false,
+                  hasLyrics: songInfo.hasLyrics || false
+                };
+              }
+            } catch (error) {
+              console.error(`获取歌曲 ${fav.song_id} 信息失败:`, error);
+            }
+            
+            // 如果无法获取完整信息，使用收藏中的基本信息
+            return {
+              ...fav,
+              id: parseInt(fav.song_id) || 0,
+              title: fav.song_title,
+              artist: fav.song_artist,
+              album: fav.song_album,
+              hasCover: false,
+              hasLyrics: false
+            };
+          }));
+          
+          renderFavorites();
+        } else {
+          console.error('加载收藏失败');
+        }
+      } catch (error) {
+        console.error('加载收藏时出错:', error);
+      }
+    }
+
+    // 渲染收藏歌曲列表
+    function renderFavorites() {
+      const favoritesList = document.getElementById('favoritesList');
+      const emptyFavorites = document.getElementById('emptyFavorites');
+      
+      if (favorites.length === 0) {
+        favoritesList.innerHTML = '';
+        emptyFavorites.style.display = 'block';
+        return;
+      }
+
+      emptyFavorites.style.display = 'none';
+      favoritesList.innerHTML = favorites.map((fav, index) => `
+        <div class="song-item" data-song-id="${fav.id}">
+          <div class="song-index">${index + 1}</div>
+          <div class="song-info">
+            <div class="song-title">
+              <a href="/song?id=${fav.id}&song=${encodeURIComponent(fav.title)}&artist=${encodeURIComponent(fav.artist)}&album=${encodeURIComponent(fav.album || '')}">
+                ${fav.title}
+              </a>
+            </div>
+            <div class="song-artist">${fav.artist || '未知歌手'}</div>
+          </div>
+          <div class="song-album">${fav.album || '未知专辑'}</div>
+          <div class="song-actions">
+            <button class="play-btn" onclick="playSong(${fav.id}, '${fav.title}', '${fav.artist}')">播放</button>
+            <button class="collect-btn remove-favorite" onclick="removeFavorite('${fav.song_id}')">取消收藏</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 取消收藏
+    async function removeFavorite(songId) {
+      if (!confirm('确定要取消收藏这首歌吗？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/favorites/${songId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          // 从本地列表中移除
+          favorites = favorites.filter(fav => fav.song_id !== songId);
+          renderFavorites();
+          
+          // 更新歌曲页面的收藏状态
+          updateFavoriteStatus(songId, false);
+        } else {
+          alert('取消收藏失败');
+        }
+      } catch (error) {
+        console.error('取消收藏时出错:', error);
+        alert('取消收藏失败');
+      }
+    }
+
+    // 播放歌曲
+    function playSong(songId, title, artist) {
+      // 这里需要实现播放逻辑
+      console.log('播放歌曲:', songId, title, artist);
+      // 可以调用全局的播放器功能
+      if (window.playSongFromId) {
+        window.playSongFromId(songId, title, artist);
+      }
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      checkLoginStatus();
+      
+      // 设置模态框事件
+      setupModalEvents();
+      
+      // 监听登录状态变化
+      window.addEventListener('userLogin', function() {
+        checkLoginStatus();
+      });
+      
+      window.addEventListener('userLogout', function() {
+        checkLoginStatus();
+      });
+    });
+
+    // 设置模态框事件 - 使用app.js中的统一逻辑
+    function setupModalEvents() {
+      // 模态框事件已经在app.js中统一处理
+      // 这里只需要确保模态框元素存在即可
+      
+      // 登录提示链接
+      document.getElementById('loginPromptLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        // 触发app.js中的登录模态框打开
+        const loginOpen = document.getElementById('loginOpen');
+        if (loginOpen) {
+          loginOpen.click();
+        }
+      });
+    }
+
+    // 更新歌曲页面的收藏状态（全局函数）
+    function updateFavoriteStatus(songId, isFavorited) {
+      // 这个函数会被歌曲页面调用
+      if (window.updateSongFavoriteStatus) {
+        window.updateSongFavoriteStatus(songId, isFavorited);
+      }
+    }
+    
+    // 初始化登录状态管理
+    if (window.authManager) {
+      window.authManager.initAllPagesAuth();
+    }
+  </script>
+</body>
+</html>

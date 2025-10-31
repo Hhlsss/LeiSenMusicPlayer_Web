@@ -2,15 +2,21 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
+
+	"MusicPlayerWeb/db"
 
 	"github.com/dhowden/tag"
 )
@@ -493,4 +499,527 @@ func cleanLyrics(s string) string {
 		}
 	}
 	return strings.Join(out, "\n")
+}
+
+// Comment 结构体定义
+type Comment struct {
+	ID        int64  `json:"id"`
+	SongID    int64  `json:"song_id"`
+	UserID    string `json:"user_id"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+	Nickname  string `json:"nickname"`
+}
+
+// GetSongComments 获取歌曲的评论列表
+func GetSongComments(songID int) ([]Comment, error) {
+	// 初始化数据库连接
+	if err := db.Init(); err != nil {
+		return nil, fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 使用 HTTP 客户端直接调用 Supabase REST API
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/song_comments?song_id=eq.%d&select=*&order=created_at.desc",
+		os.Getenv("SUPABASE_URL"), songID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API 返回错误状态码: %d", resp.StatusCode)
+	}
+
+	var result []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	// 转换结果到Comment结构体
+	var comments []Comment
+	for _, item := range result {
+		// 获取用户名（评论中存储的用户昵称）
+		username := getStringFromMap(item, "username", "用户")
+
+		comment := Comment{
+			ID:        parseID(item["id"]),
+			SongID:    int64(songID),
+			UserID:    username,
+			Content:   getStringFromMap(item, "content", ""),
+			CreatedAt: formatTime(getStringFromMap(item, "created_at", "")),
+			Nickname:  username, // 直接使用评论中存储的用户昵称
+		}
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
+}
+
+// AddComment 添加评论
+func AddComment(songID int, userID int, content string) (*Comment, error) {
+	// 初始化数据库连接
+	if err := db.Init(); err != nil {
+		return nil, fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 使用 HTTP 客户端直接调用 Supabase REST API
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/song_comments", os.Getenv("SUPABASE_URL"))
+
+	// 获取用户真实昵称
+	userNickname := "用户" // 默认昵称
+	if userInfo, err := GetUserInfo(userID); err == nil {
+		if nickname, ok := userInfo["nickname"].(string); ok && nickname != "" {
+			userNickname = nickname
+		}
+	}
+
+	// 准备插入数据
+	insertData := map[string]interface{}{
+		"song_id":  fmt.Sprintf("%d", songID),
+		"username": userNickname, // 使用用户设置的昵称
+		"content":  content,
+		"rating":   5, // 默认评分
+	}
+
+	jsonData, err := json.Marshal(insertData)
+	if err != nil {
+		return nil, fmt.Errorf("序列化数据失败: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Prefer", "return=representation")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("API 返回错误状态码: %d", resp.StatusCode)
+	}
+
+	var result []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("插入评论后未返回结果")
+	}
+
+	// 创建评论记录
+	comment := &Comment{
+		ID:        parseID(result[0]["id"]),
+		SongID:    int64(songID),
+		UserID:    getStringFromMap(result[0], "username", "用户"),
+		Content:   content,
+		CreatedAt: formatTime(getStringFromMap(result[0], "created_at", "")),
+		Nickname:  userNickname, // 使用真实昵称
+	}
+
+	return comment, nil
+}
+
+// GetCurrentUserID 获取当前用户ID
+func GetCurrentUserID(r *http.Request) (int, error) {
+	// 从cookie中获取用户ID
+	cookie, err := r.Cookie("user_id")
+	if err != nil {
+		return 0, err
+	}
+	
+	userID, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return 0, err
+	}
+	
+	return userID, nil
+}
+
+// GetUserInfo 获取用户信息
+func GetUserInfo(userID int) (map[string]interface{}, error) {
+	// 从数据库获取用户信息
+	userInfo, err := db.GetUserProfile(userID)
+	if err != nil {
+		// 如果获取失败，返回默认信息
+		return map[string]interface{}{
+			"id":       userID,
+			"nickname": "用户",
+			"email":    "user" + strconv.Itoa(userID) + "@example.com",
+		}, nil
+	}
+	return userInfo, nil
+}
+
+// 辅助函数：从map中安全获取字符串
+func getStringFromMap(m map[string]interface{}, key string, defaultValue string) string {
+	if val, ok := m[key]; ok && val != nil {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return defaultValue
+}
+
+// 辅助函数：格式化时间
+func formatTime(timeStr string) string {
+	if timeStr == "" {
+		return time.Now().Format("2006-01-02 15:04:05")
+	}
+
+	// 尝试解析时间
+	if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
+		return t.Format("2006-01-02 15:04:05")
+	}
+
+	return timeStr
+}
+
+// 辅助函数：解析ID
+func parseID(id interface{}) int64 {
+	if id == nil {
+		return time.Now().Unix()
+	}
+
+	switch v := id.(type) {
+	case string:
+		// 如果是UUID，返回时间戳
+		return time.Now().Unix()
+	case float64:
+		return int64(v)
+	case int64:
+		return v
+	default:
+		return time.Now().Unix()
+	}
+}
+
+// GetAlbumByID 根据专辑ID获取专辑信息
+func GetAlbumByID(id int) (map[string]interface{}, error) {
+	albums, err := ListAlbums()
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查ID是否在有效范围内
+	if id < 1 || id > len(albums) {
+		return nil, errors.New("album not found")
+	}
+
+	album := albums[id-1]
+	albumData := make(map[string]interface{})
+	albumData["id"] = id
+	albumData["name"] = album.Name
+	albumData["artist"] = album.Artist
+	albumData["songCount"] = album.Count
+
+	// 生成封面URL
+	if album.CoverTrackID >= 0 {
+		albumData["cover"] = fmt.Sprintf("/api/cover?id=%d", album.CoverTrackID)
+	} else {
+		albumData["cover"] = "https://picsum.photos/id/1015/300/300"
+	}
+
+	return albumData, nil
+}
+
+// ListAlbumTracksByID 根据专辑ID获取专辑歌曲列表
+func ListAlbumTracksByID(id int) ([]Track, error) {
+	albums, err := ListAlbums()
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查ID是否在有效范围内
+	if id < 1 || id > len(albums) {
+		return nil, errors.New("album not found")
+	}
+
+	album := albums[id-1]
+	return ListAlbumTracks(album.Name, album.Artist)
+}
+
+// UserFavorite 用户收藏结构体
+type UserFavorite struct {
+	ID         int64  `json:"id"`
+	UserID     int    `json:"user_id"`
+	SongID     string `json:"song_id"`
+	SongTitle  string `json:"song_title"`
+	SongArtist string `json:"song_artist"`
+	SongAlbum  string `json:"song_album"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// GetUserFavorites 获取用户收藏列表
+func GetUserFavorites(userID int) ([]UserFavorite, error) {
+	// 初始化数据库连接
+	if err := db.Init(); err != nil {
+		return nil, fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 使用 HTTP 客户端直接调用 Supabase REST API
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%d&select=*&order=created_at.desc",
+		os.Getenv("SUPABASE_URL"), userID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// 如果表不存在，返回空列表而不是错误
+		if resp.StatusCode == http.StatusNotFound {
+			return []UserFavorite{}, nil
+		}
+		return nil, fmt.Errorf("API 返回错误状态码: %d", resp.StatusCode)
+	}
+
+	var result []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	// 转换结果到UserFavorite结构体
+	var favorites []UserFavorite
+	for _, item := range result {
+		favorite := UserFavorite{
+			ID:         parseID(item["id"]),
+			UserID:     userID,
+			SongID:     getStringFromMap(item, "song_id", ""),
+			SongTitle:  getStringFromMap(item, "song_title", ""),
+			SongArtist: getStringFromMap(item, "song_artist", ""),
+			SongAlbum:  getStringFromMap(item, "song_album", ""),
+			CreatedAt:  formatTime(getStringFromMap(item, "created_at", "")),
+		}
+		favorites = append(favorites, favorite)
+	}
+
+	return favorites, nil
+}
+
+// AddUserFavorite 添加用户收藏
+func AddUserFavorite(userID int, songID, songTitle, songArtist, songAlbum string) error {
+	// 初始化数据库连接
+	if err := db.Init(); err != nil {
+		return fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 使用 HTTP 客户端直接调用 Supabase REST API
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/user_favorites", os.Getenv("SUPABASE_URL"))
+
+	// 准备插入数据
+	insertData := map[string]interface{}{
+		"user_id":     userID,
+		"song_id":     songID,
+		"song_title":  songTitle,
+		"song_artist": songArtist,
+		"song_album":  songAlbum,
+	}
+
+	jsonData, err := json.Marshal(insertData)
+	if err != nil {
+		return fmt.Errorf("序列化数据失败: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Prefer", "return=representation")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		// 如果表不存在，尝试创建表
+		if resp.StatusCode == http.StatusNotFound {
+			// 创建user_favorites表
+			if err := createUserFavoritesTable(); err != nil {
+				// 如果创建表失败，使用本地存储作为降级方案
+				fmt.Printf("创建收藏表失败，使用本地存储: %v\n", err)
+				return nil
+			}
+			// 重新尝试插入数据
+			return AddUserFavorite(userID, songID, songTitle, songArtist, songAlbum)
+		}
+
+		// 读取响应体获取详细错误信息
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API 返回错误状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// DeleteUserFavorite 删除用户收藏
+func DeleteUserFavorite(userID int, songID string) error {
+	// 初始化数据库连接
+	if err := db.Init(); err != nil {
+		return fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 使用 HTTP 客户端直接调用 Supabase REST API
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%d&song_id=eq.%s",
+		os.Getenv("SUPABASE_URL"), userID, songID)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		// 如果表不存在，直接返回成功（因为本来就没有收藏记录）
+		if resp.StatusCode == http.StatusNotFound {
+			return nil
+		}
+		return fmt.Errorf("API 返回错误状态码: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// CheckUserFavorite 检查歌曲是否已收藏
+func CheckUserFavorite(userID int, songID string) (bool, error) {
+	// 初始化数据库连接
+	if err := db.Init(); err != nil {
+		return false, fmt.Errorf("数据库连接失败: %v", err)
+	}
+
+	// 使用 HTTP 客户端直接调用 Supabase REST API
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%d&song_id=eq.%s&select=id",
+		os.Getenv("SUPABASE_URL"), userID, songID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// 如果表不存在，返回false而不是错误
+		if resp.StatusCode == http.StatusNotFound {
+			return false, nil
+		}
+		return false, fmt.Errorf("API 返回错误状态码: %d", resp.StatusCode)
+	}
+
+	var result []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return false, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	// 如果结果不为空，说明已收藏
+	return len(result) > 0, nil
+}
+
+// createUserFavoritesTable 创建用户收藏表
+func createUserFavoritesTable() error {
+	// 使用 HTTP 客户端调用 Supabase SQL API 创建表
+	httpClient := &http.Client{}
+
+	// 创建表的 SQL 语句 - 使用更简单的SQL语法
+	sql := `CREATE TABLE IF NOT EXISTS user_favorites (
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER NOT NULL,
+		song_id VARCHAR NOT NULL,
+		song_title VARCHAR NOT NULL,
+		song_artist VARCHAR NOT NULL,
+		song_album VARCHAR,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		UNIQUE(user_id, song_id)
+	)`
+
+	// 准备请求数据
+	requestData := map[string]interface{}{
+		"query": sql,
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		return fmt.Errorf("序列化SQL语句失败: %v", err)
+	}
+
+	url := fmt.Sprintf("%s/rest/v1/", os.Getenv("SUPABASE_URL"))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Prefer", "return=minimal")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("创建表失败，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }

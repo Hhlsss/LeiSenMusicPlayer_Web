@@ -34,3 +34,13 @@ func HandleAlbumPage(w http.ResponseWriter, r *http.Request) {
 func HandleArtistPage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join("web", "artist.html"))
 }
+
+// HandleFavoritesPage 收藏页面：GET /favorites
+func HandleFavoritesPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "favorites.html"))
+}
+
+// HandleProfilePage 个人中心页面：GET /profile
+func HandleProfilePage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "profile.html"))
+}
