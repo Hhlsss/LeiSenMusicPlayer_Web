@@ -10,12 +10,20 @@
     <div class="logo">雷森音乐</div>
     <nav class="nav">
       <a href="/">我的音乐</a>
-      <a href="/artists">歌手</a>
+      <a href="/artists" class="active">歌手</a>
       <a href="/albums">专辑</a>
-      <a href="/playlists">我的歌单</a>
+      <a href="/favorites">我的收藏</a>
+      <a href="/upload">上传</a>
+      <a href="/forum">音乐论坛</a>
+      <a href="/profile">个人中心</a>
     </nav>
     <div class="search">
       <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+    </div>
+    <div class="user-actions">
+      <button class="primary">创建歌单</button>
+      <button id="logoutBtn" class="hidden">退出</button>
+      <span id="userNickname" class="hidden nickname"></span>
     </div>
   </header>
 
@@ -47,6 +55,100 @@
       </div>
     </section>
   </main>
+
+  <!-- 登录/注册模态框 -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <div id="loginTitle">账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="loginAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </label>
+        <label class="form-row inline">
+          <input type="checkbox" id="loginAuto" checked />
+          <span>自动登录</span>
+        </label>
+        <button type="submit" class="btn-gradient full">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <div id="registerTitle">账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="registerAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="btn-gradient full">注册</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 登录/注册模态框 -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-header">
+      <div id="loginTitle">账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="loginForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="loginAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required />
+        </label>
+        <label class="form-row inline">
+          <input type="checkbox" id="loginAuto" checked />
+          <span>自动登录</span>
+        </label>
+        <button type="submit" class="btn-gradient full">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="registerTitle">
+    <div class="modal-header">
+      <div id="registerTitle">账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <label class="form-row">
+          <span>账号</span>
+          <input type="text" id="registerAccount" placeholder="请输入账号" required />
+        </label>
+        <label class="form-row">
+          <span>密码</span>
+          <input type="password" id="registerPassword" placeholder="请输入密码" required />
+        </label>
+        <button type="submit" class="btn-gradient full">注册</button>
+      </form>
+    </div>
+  </div>
 
   <!-- 底部播放器栏 -->
   <div class="player-bar">
@@ -395,5 +497,7 @@
       window.authManager.initAllPagesAuth();
     }
   </script>
+  
+  <script src="app.js"></script>
 </body>
 </html>

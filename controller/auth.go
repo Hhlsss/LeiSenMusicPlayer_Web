@@ -2,14 +2,14 @@ package controller
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"net/http"
-	"strconv"
 
 	"MusicPlayerWeb/db"
-	"MusicPlayerWeb/service"
 )
 
 type authReq struct {
@@ -38,38 +38,34 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "account and password required"})
 		return
 	}
-	if err := service.RegisterUser(context.Background(), req.Account, req.Password); err != nil {
+	// 使用Supabase Auth注册用户
+	if err := db.RegisterUser(context.Background(), req.Account, req.Password); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	
-	// 注册成功后自动登录，设置用户会话cookie
-	// 使用Supabase Auth注册用户
-	if err := db.RegisterUser(context.Background(), req.Account, req.Password); err != nil {
-		writeErr(w, http.StatusInternalServerError, "注册失败: "+err.Error())
-		return
-	}
-	
-	// 创建用户个人资料
-	userID := int(hashString(req.Account)) % 1000000 + 1
-	if err := db.CreateOrUpdateUserProfile(userID, req.Account, req.Account); err != nil {
+
+	// 生成UUID格式的用户ID
+	userUUID := generateUUID(req.Account)
+
+	// 创建用户个人资料（使用UUID格式）
+	if err := db.CreateOrUpdateUserProfileByUUID(userUUID, req.Account, req.Account); err != nil {
 		// 即使创建个人资料失败也继续，但记录错误
 		fmt.Printf("创建用户个人资料失败: %v\n", err)
 	}
-	
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "user_id",
-		Value:    strconv.Itoa(userID),
+		Value:    userUUID,
 		Path:     "/",
 		MaxAge:   24 * 60 * 60, // 24小时
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
-	
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"message":  "register ok",
 		"nickname": req.Account,
-		"user_id":  userID,
+		"user_id":  userUUID,
 	})
 }
 
@@ -93,17 +89,17 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
 		return
 	}
-	
-	// 获取用户个人资料
-	userID := int(hashString(req.Account)) % 1000000 + 1
+
+	// 生成UUID格式的用户ID
+	userUUID := generateUUID(req.Account)
 	userProfile, err := db.GetUserProfileByEmail(req.Account)
 	var nickname string
-	
+
 	if err != nil {
 		// 如果用户个人资料不存在，创建新的个人资料
 		nickname = req.Account
-		if err := db.CreateOrUpdateUserProfile(userID, req.Account, nickname); err != nil {
-			fmt.Printf("创建用户个人资料失败: %v\n", err)
+		if err := db.CreateOrUpdateUserProfileByUUID(userUUID, req.Account, nickname); err != nil {
+			fmt.Printf("创建用户个人资料失败: %v", err)
 		}
 	} else {
 		// 从数据库获取真实昵称
@@ -113,20 +109,20 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 			nickname = req.Account
 		}
 	}
-	
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "user_id",
-		Value:    strconv.Itoa(userID),
+		Value:    userUUID,
 		Path:     "/",
 		MaxAge:   24 * 60 * 60, // 24小时
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
-	
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"message":  "login ok",
 		"nickname": nickname,
-		"user_id":  userID,
+		"user_id":  userUUID,
 	})
 }
 
@@ -136,7 +132,7 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
-	
+
 	// 清除用户会话cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "user_id",
@@ -146,7 +142,7 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
-	
+
 	writeJSON(w, http.StatusOK, map[string]string{
 		"message": "logout ok",
 	})
@@ -157,4 +153,14 @@ func hashString(s string) uint32 {
 	h := fnv.New32a()
 	h.Write([]byte(s))
 	return h.Sum32()
+}
+
+// generateUUID 生成UUID格式的用户ID
+func generateUUID(account string) string {
+	// 使用MD5哈希生成UUID格式的字符串
+	hash := md5.Sum([]byte(account))
+	uuid := hex.EncodeToString(hash[:])
+	// 格式化为UUID格式：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		uuid[0:8], uuid[8:12], uuid[12:16], uuid[16:20], uuid[20:32])
 }

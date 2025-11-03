@@ -27,11 +27,11 @@ type MusicFile struct {
 	FileType    string    `json:"file_type"`
 	StoragePath string    `json:"storage_path"`
 	UploadedAt  time.Time `json:"uploaded_at"`
-	UserID      int       `json:"user_id"`
+	UserID      string    `json:"user_id"`
 }
 
 // UploadMusicFile 上传音乐文件到Supabase存储并保存元数据到数据库
-func UploadMusicFile(fileHeader *multipart.FileHeader, userID int) (*MusicFile, error) {
+func UploadMusicFile(fileHeader *multipart.FileHeader, userUUID string) (*MusicFile, error) {
 	// 打开上传的文件
 	file, err := fileHeader.Open()
 	if err != nil {
@@ -52,13 +52,13 @@ func UploadMusicFile(fileHeader *multipart.FileHeader, userID int) (*MusicFile, 
 	}
 
 	// 上传文件到Supabase存储
-	storagePath, err := uploadToSupabaseStorage(fileBytes, fileHeader.Filename, userID)
+	storagePath, err := uploadToSupabaseStorage(fileBytes, fileHeader.Filename, userUUID)
 	if err != nil {
 		return nil, fmt.Errorf("上传到存储失败: %v", err)
 	}
 
 	// 保存音乐元数据到数据库
-	musicFile, err := saveMusicMetadata(metadata, fileHeader, storagePath, userID)
+	musicFile, err := saveMusicMetadata(metadata, fileHeader, storagePath, userUUID)
 	if err != nil {
 		// 如果保存元数据失败，尝试删除已上传的文件
 		deleteFromSupabaseStorage(storagePath)
@@ -100,10 +100,10 @@ func extractMusicMetadata(fileBytes []byte, filename string) (map[string]string,
 }
 
 // uploadToSupabaseStorage 上传文件到Supabase存储桶
-func uploadToSupabaseStorage(fileBytes []byte, filename string, userID int) (string, error) {
+func uploadToSupabaseStorage(fileBytes []byte, filename string, userUUID string) (string, error) {
 	// 生成唯一的存储路径
 	timestamp := time.Now().Unix()
-	storagePath := fmt.Sprintf("music/%d/%d_%s", userID, timestamp, filename)
+	storagePath := fmt.Sprintf("music/%s/%d_%s", userUUID, timestamp, filename)
 
 	// 使用Supabase Storage API上传文件
 	httpClient := &http.Client{}
@@ -157,12 +157,12 @@ func deleteFromSupabaseStorage(storagePath string) error {
 }
 
 // saveMusicMetadata 保存音乐元数据到数据库
-func saveMusicMetadata(metadata map[string]string, fileHeader *multipart.FileHeader, storagePath string, userID int) (*MusicFile, error) {
+func saveMusicMetadata(metadata map[string]string, fileHeader *multipart.FileHeader, storagePath string, userUUID string) (*MusicFile, error) {
 	httpClient := &http.Client{}
 	url := fmt.Sprintf("%s/rest/v1/music_files", os.Getenv("SUPABASE_URL"))
 
 	musicFile := &MusicFile{
-		ID:          fmt.Sprintf("%d_%d", userID, time.Now().Unix()),
+		ID:          fmt.Sprintf("%s_%d", userUUID, time.Now().Unix()),
 		Title:       metadata["title"],
 		Artist:      metadata["artist"],
 		Album:       metadata["album"],
@@ -171,7 +171,7 @@ func saveMusicMetadata(metadata map[string]string, fileHeader *multipart.FileHea
 		FileType:    strings.ToLower(filepath.Ext(fileHeader.Filename)),
 		StoragePath: storagePath,
 		UploadedAt:  time.Now(),
-		UserID:      userID,
+		UserID:      userUUID,
 	}
 
 	insertData := map[string]interface{}{
@@ -215,7 +215,7 @@ func saveMusicMetadata(metadata map[string]string, fileHeader *multipart.FileHea
 				return nil, fmt.Errorf("创建音乐文件表失败: %v", err)
 			}
 			// 重新尝试插入数据
-			return saveMusicMetadata(metadata, fileHeader, storagePath, userID)
+			return saveMusicMetadata(metadata, fileHeader, storagePath, userUUID)
 		}
 
 		body, _ := io.ReadAll(resp.Body)
@@ -279,9 +279,9 @@ func createMusicFilesTable() error {
 }
 
 // GetUserMusicFiles 获取用户上传的音乐文件列表
-func GetUserMusicFiles(userID int) ([]MusicFile, error) {
+func GetUserMusicFiles(userUUID string) ([]MusicFile, error) {
 	httpClient := &http.Client{}
-	url := fmt.Sprintf("%s/rest/v1/music_files?user_id=eq.%d&order=uploaded_at.desc", os.Getenv("SUPABASE_URL"), userID)
+	url := fmt.Sprintf("%s/rest/v1/music_files?user_id=eq.%s&order=uploaded_at.desc", os.Getenv("SUPABASE_URL"), userUUID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -322,7 +322,7 @@ func GetUserMusicFiles(userID int) ([]MusicFile, error) {
 			FileSize:    getInt64FromMapUpload(item, "file_size", 0),
 			FileType:    getStringFromMapUpload(item, "file_type", ""),
 			StoragePath: getStringFromMapUpload(item, "storage_path", ""),
-			UserID:      getIntFromMapUpload(item, "user_id", 0),
+			UserID:      getStringFromMapUpload(item, "user_id", ""),
 		}
 
 		// 解析上传时间
@@ -343,11 +343,84 @@ func GetMusicFileURL(storagePath string) string {
 	return fmt.Sprintf("%s/storage/v1/object/public/music/%s", os.Getenv("SUPABASE_URL"), storagePath)
 }
 
+// GetMusicFileByID 根据ID获取音乐文件信息
+func GetMusicFileByID(musicFileID string, userUUID string) (*MusicFile, error) {
+	httpClient := &http.Client{}
+	url := fmt.Sprintf("%s/rest/v1/music_files?id=eq.%s&user_id=eq.%s", os.Getenv("SUPABASE_URL"), musicFileID, userUUID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("音乐文件不存在，状态码: %d", resp.StatusCode)
+	}
+
+	var result []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result) == 0 {
+		return nil, fmt.Errorf("音乐文件不存在")
+	}
+
+	item := result[0]
+	musicFile := &MusicFile{
+		ID:          getStringFromMapUpload(item, "id", ""),
+		Title:       getStringFromMapUpload(item, "title", ""),
+		Artist:      getStringFromMapUpload(item, "artist", ""),
+		Album:       getStringFromMapUpload(item, "album", ""),
+		FileName:    getStringFromMapUpload(item, "file_name", ""),
+		FileSize:    getInt64FromMapUpload(item, "file_size", 0),
+		FileType:    getStringFromMapUpload(item, "file_type", ""),
+		StoragePath: getStringFromMapUpload(item, "storage_path", ""),
+		UserID:      getStringFromMapUpload(item, "user_id", ""),
+	}
+
+	// 解析上传时间
+	if uploadedAtStr := getStringFromMapUpload(item, "uploaded_at", ""); uploadedAtStr != "" {
+		if uploadedAt, err := time.Parse(time.RFC3339, uploadedAtStr); err == nil {
+			musicFile.UploadedAt = uploadedAt
+		}
+	}
+
+	return musicFile, nil
+}
+
+// GetLocalMusicFiles 获取本地音乐文件列表
+func GetLocalMusicFiles() ([]MusicFile, error) {
+	// 这里实现获取本地音乐文件的逻辑
+	// 暂时返回空列表，后续可以根据实际需求实现
+	return []MusicFile{}, nil
+}
+
+// HandleRangeRequest 处理范围请求（支持断点续传）
+func HandleRangeRequest(w http.ResponseWriter, r *http.Request, musicFile *MusicFile) {
+	// 解析Range头
+	rangeHeader := r.Header.Get("Range")
+	if rangeHeader == "" {
+		http.Error(w, "Range header required", http.StatusBadRequest)
+		return
+	}
+
+	// 这里实现范围请求处理逻辑
+	// 暂时返回完整文件，后续可以优化为真正的流媒体支持
+	http.Redirect(w, r, GetMusicFileURL(musicFile.StoragePath), http.StatusFound)
+}
+
 // DeleteMusicFile 删除音乐文件（从存储和数据库中删除）
-func DeleteMusicFile(musicFileID string, userID int) error {
+func DeleteMusicFile(musicFileID string, userUUID string) error {
 	// 首先获取文件信息
 	httpClient := &http.Client{}
-	getUrl := fmt.Sprintf("%s/rest/v1/music_files?id=eq.%s&user_id=eq.%d", os.Getenv("SUPABASE_URL"), musicFileID, userID)
+	getUrl := fmt.Sprintf("%s/rest/v1/music_files?id=eq.%s&user_id=eq.%s", os.Getenv("SUPABASE_URL"), musicFileID, userUUID)
 
 	req, err := http.NewRequest("GET", getUrl, nil)
 	if err != nil {
@@ -384,7 +457,7 @@ func DeleteMusicFile(musicFileID string, userID int) error {
 	}
 
 	// 从数据库中删除记录
-	delUrl := fmt.Sprintf("%s/rest/v1/music_files?id=eq.%s&user_id=eq.%d", os.Getenv("SUPABASE_URL"), musicFileID, userID)
+	delUrl := fmt.Sprintf("%s/rest/v1/music_files?id=eq.%s&user_id=eq.%s", os.Getenv("SUPABASE_URL"), musicFileID, userUUID)
 	reqDel, err := http.NewRequest("DELETE", delUrl, nil)
 	if err != nil {
 		return fmt.Errorf("创建删除请求失败: %v", err)

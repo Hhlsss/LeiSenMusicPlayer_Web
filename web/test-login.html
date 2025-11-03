@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>登录功能测试</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding: 20px; font-family: Arial, sans-serif; }
+    .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    button { margin: 5px; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+  <h1>登录功能测试</h1>
+  
+  <div id="testResults"></div>
+  
+  <h3>测试按钮</h3>
+  <!-- 登录和注册按钮已移除 -->
+  
+  <h3>测试模态框</h3>
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+  
+  <div id="loginModal" class="modal hidden">
+    <div class="modal-header">
+      <div>账号登录</div>
+      <button class="modal-close" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <p>登录模态框内容</p>
+    </div>
+  </div>
+  
+  <div id="registerModal" class="modal hidden">
+    <div class="modal-header">
+      <div>账号注册</div>
+      <button class="modal-close" data-close="registerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <p>注册模态框内容</p>
+    </div>
+  </div>
+  
+  <script>
+    // 简单的测试函数
+    function testLoginFunctionality() {
+      const results = document.getElementById('testResults');
+      
+      // 测试1：检查按钮是否存在
+      const loginBtn = document.getElementById('loginOpen');
+      const registerBtn = document.getElementById('registerOpen');
+      
+      if (loginBtn) {
+        results.innerHTML += '<div class="test-result success">✅ 登录按钮存在</div>';
+      } else {
+        results.innerHTML += '<div class="test-result error">❌ 登录按钮不存在</div>';
+      }
+      
+      if (registerBtn) {
+        results.innerHTML += '<div class="test-result success">✅ 注册按钮存在</div>';
+      } else {
+        results.innerHTML += '<div class="test-result error">❌ 注册按钮不存在</div>';
+      }
+      
+      // 测试2：检查模态框是否存在
+      const loginModal = document.getElementById('loginModal');
+      const registerModal = document.getElementById('registerModal');
+      const overlay = document.getElementById('modalOverlay');
+      
+      if (loginModal) {
+        results.innerHTML += '<div class="test-result success">✅ 登录模态框存在</div>';
+      } else {
+        results.innerHTML += '<div class="test-result error">❌ 登录模态框不存在</div>';
+      }
+      
+      if (registerModal) {
+        results.innerHTML += '<div class="test-result success">✅ 注册模态框存在</div>';
+      } else {
+        results.innerHTML += '<div class="test-result error">❌ 注册模态框不存在</div>';
+      }
+      
+      if (overlay) {
+        results.innerHTML += '<div class="test-result success">✅ 遮罩层存在</div>';
+      } else {
+        results.innerHTML += '<div class="test-result error">❌ 遮罩层不存在</div>';
+      }
+      
+      // 测试3：绑定事件
+      if (loginBtn) {
+        loginBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          results.innerHTML += '<div class="test-result info">🔔 登录按钮被点击了！</div>';
+          
+          // 显示模态框
+          if (loginModal && overlay) {
+            loginModal.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+            results.innerHTML += '<div class="test-result success">✅ 登录模态框已显示</div>';
+          }
+        });
+      }
+      
+      if (registerBtn) {
+        registerBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          results.innerHTML += '<div class="test-result info">🔔 注册按钮被点击了！</div>';
+          
+          // 显示模态框
+          if (registerModal && overlay) {
+            registerModal.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+            results.innerHTML += '<div class="test-result success">✅ 注册模态框已显示</div>';
+          }
+        });
+      }
+      
+      // 绑定关闭事件
+      document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const modalId = this.getAttribute('data-close');
+          const modal = document.getElementById(modalId);
+          if (modal && overlay) {
+            modal.classList.add('hidden');
+            overlay.classList.add('hidden');
+            results.innerHTML += '<div class="test-result info">🔔 模态框已关闭</div>';
+          }
+        });
+      });
+      
+      // 遮罩层点击关闭
+      if (overlay) {
+        overlay.addEventListener('click', function() {
+          document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.add('hidden');
+          });
+          overlay.classList.add('hidden');
+          results.innerHTML += '<div class="test-result info">🔔 通过遮罩层关闭模态框</div>';
+        });
+      }
+    }
+    
+    // 页面加载完成后运行测试
+    document.addEventListener('DOMContentLoaded', testLoginFunctionality);
+  </script>
+</body>
+</html>

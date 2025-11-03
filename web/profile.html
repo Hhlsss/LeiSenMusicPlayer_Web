@@ -5,6 +5,283 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>个人中心 - 雷森音乐</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .profile-layout {
+      display: flex;
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .profile-sidebar {
+      width: 250px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-nav {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border: none;
+      background: #f8f9fa;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      color: #333;
+      transition: all 0.3s ease;
+    }
+
+    .nav-item:hover {
+      background: #e9ecef;
+      transform: translateX(5px);
+    }
+
+    .nav-item.active {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+    }
+
+    .profile-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .my-posts {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .posts-list {
+      margin-top: 20px;
+    }
+
+    .post-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid #667eea;
+      transition: all 0.3s ease;
+    }
+
+    .post-item:hover {
+      background: #e9ecef;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .post-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .post-meta {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .post-content {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .post-stats {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    /* 音乐路径设置样式 */
+    .music-path-settings {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .settings-card {
+      max-width: 600px;
+    }
+
+    .current-path-info {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-left: 4px solid #667eea;
+    }
+
+    .current-path-info h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 16px;
+    }
+
+    .path-display {
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 10px;
+      margin: 10px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .path-help {
+      margin: 10px 0 0 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .path-form {
+      margin-top: 20px;
+    }
+
+    .path-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .path-input-group input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .path-input-group button {
+      padding: 10px 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #f8f9fa;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .path-input-group button:hover {
+      background: #e9ecef;
+    }
+
+    .path-status {
+      margin-top: 20px;
+    }
+
+    .status-message {
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .status-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .status-message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    @media (max-width: 768px) {
+      .profile-layout {
+        flex-direction: column;
+      }
+      
+      .profile-sidebar {
+        width: 100%;
+      }
+      
+      .sidebar-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      
+      .nav-item {
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+      }
+
+      /* 音乐路径设置移动端样式 */
+      .music-path-settings {
+        padding: 20px;
+      }
+      
+      .path-input-group {
+        flex-direction: column;
+      }
+      
+      .path-input-group button {
+        width: 100%;
+        margin-top: 10px;
+      }
+      
+      .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .form-actions button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -14,6 +291,8 @@
       <a href="/artists">歌手</a>
       <a href="/albums">专辑</a>
       <a href="/favorites">我的收藏</a>
+      <a href="/upload">上传</a>
+      <a href="/forum">音乐论坛</a>
       <a href="/profile" class="active">个人中心</a>
     </nav>
     <div class="search">
@@ -21,8 +300,6 @@
     </div>
     <div class="user-actions">
       <button class="primary">创建歌单</button>
-      <button id="loginOpen">登录</button>
-      <button id="registerOpen">注册</button>
       <button id="logoutBtn" class="hidden">退出</button>
       <span id="userNickname" class="hidden nickname"></span>
     </div>
@@ -45,48 +322,165 @@
 
       <!-- 个人资料编辑 -->
       <div id="profileContent" class="profile-content hidden">
-        <div class="profile-card">
-          <h3>基本信息</h3>
-          <form id="profileForm" class="profile-form">
-            <div class="form-group">
-              <label for="nickname">昵称</label>
-              <input type="text" id="nickname" name="nickname" placeholder="请输入昵称" required />
-              <small>昵称将显示在评论和个人资料中</small>
+        <div class="profile-layout">
+          <!-- 左侧：纵向导航栏 -->
+          <div class="profile-sidebar">
+            <div class="sidebar-nav">
+              <button class="nav-item active" data-tab="basic-info">基本信息</button>
+              <button class="nav-item" data-tab="personal-stats">个人统计</button>
+              <button class="nav-item" data-tab="my-posts">我发过的帖子</button>
+              <button class="nav-item" data-tab="music-path-settings">设置本地音乐路径</button>
+              <button class="nav-item" data-tab="account-management">账户管理</button>
+            </div>
+          </div>
+          
+          <!-- 右侧：内容区域 -->
+          <div class="profile-main">
+            <!-- 基本信息标签页 -->
+            <div class="tab-content active" id="basic-info-tab">
+              <div class="profile-card">
+                <h3>基本信息</h3>
+                <form id="profileForm" class="profile-form">
+                  <div class="form-group">
+                    <label for="nickname">昵称</label>
+                    <input type="text" id="nickname" name="nickname" placeholder="请输入昵称" required />
+                    <small>昵称将显示在评论和个人资料中</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" placeholder="请输入邮箱" readonly />
+                    <small>邮箱用于登录和接收通知</small>
+                  </div>
+                  
+                  <div class="form-group hidden">
+                    <label for="userid">用户ID</label>
+                    <input type="text" id="userid" name="userid" readonly />
+                    <small>系统自动生成的唯一标识</small>
+                  </div>
+                  
+                  <div class="form-actions">
+                    <button type="submit" class="primary">保存修改</button>
+                    <button type="button" id="cancelEdit" class="secondary">取消</button>
+                  </div>
+                </form>
+              </div>
             </div>
             
-            <div class="form-group">
-              <label for="email">邮箱</label>
-              <input type="email" id="email" name="email" placeholder="请输入邮箱" readonly />
-              <small>邮箱用于登录和接收通知</small>
+            <!-- 个人统计标签页 -->
+            <div class="tab-content" id="personal-stats-tab">
+              <div class="profile-stats">
+                <h3>个人统计</h3>
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <span class="stat-number" id="favoritesCount">0</span>
+                    <span class="stat-label">收藏歌曲</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-number" id="commentsCount">0</span>
+                    <span class="stat-label">发表评论</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-number" id="playlistsCount">0</span>
+                    <span class="stat-label">创建歌单</span>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <div class="form-group hidden">
-              <label for="userid">用户ID</label>
-              <input type="text" id="userid" name="userid" readonly />
-              <small>系统自动生成的唯一标识</small>
+            <!-- 我发过的帖子标签页 -->
+            <div class="tab-content" id="my-posts-tab">
+              <div class="my-posts">
+                <h3>我发过的帖子</h3>
+                <div id="posts-list" class="posts-list">
+                  <div class="loading">
+                    <p>正在加载您的帖子...</p>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <div class="form-actions">
-              <button type="submit" class="primary">保存修改</button>
-              <button type="button" id="cancelEdit" class="secondary">取消</button>
+            <!-- 设置本地音乐路径标签页 -->
+            <div class="tab-content" id="music-path-settings-tab">
+              <div class="music-path-settings">
+                <h3>设置本地音乐路径</h3>
+                <div class="settings-card">
+                  <div class="current-path-info">
+                    <h4>当前音乐路径</h4>
+                    <div class="path-display">
+                      <code id="currentMusicPath">C:\Users\28890\Desktop\music</code>
+                    </div>
+                    <p class="path-help">系统将从此路径扫描您的本地音乐文件</p>
+                  </div>
+                  
+                  <form id="musicPathForm" class="path-form">
+                    <div class="form-group">
+                      <label for="newMusicPath">新的音乐路径</label>
+                      <div class="path-input-group">
+                        <input type="text" id="newMusicPath" name="newMusicPath" placeholder="请输入新的音乐文件夹路径" required />
+                        <button type="button" id="browsePathBtn" class="btn-secondary">浏览</button>
+                      </div>
+                      <small>例如：C:\\Users\\用户名\\Music 或 D:\\音乐</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                      <button type="submit" class="primary">保存路径</button>
+                      <button type="button" id="testPathBtn" class="secondary">测试路径</button>
+                      <button type="button" id="resetPathBtn" class="secondary">重置为默认路径</button>
+                    </div>
+                  </form>
+                  
+                  <div class="path-status">
+                    <div id="pathStatusMessage" class="status-message"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </form>
-        </div>
-
-        <div class="profile-stats">
-          <h3>个人统计</h3>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-number" id="favoritesCount">0</span>
-              <span class="stat-label">收藏歌曲</span>
+            
+            <!-- 设置本地音乐路径标签页 -->
+            <div class="tab-content" id="music-path-settings-tab">
+              <div class="music-path-settings">
+                <h3>设置本地音乐路径</h3>
+                <div class="settings-card">
+                  <div class="current-path-info">
+                    <h4>当前音乐路径</h4>
+                    <div class="path-display">
+                      <code id="currentMusicPath">C:\Users\28890\Desktop\music</code>
+                    </div>
+                    <p class="path-help">系统将从此路径扫描您的本地音乐文件</p>
+                  </div>
+                  
+                  <form id="musicPathForm" class="path-form">
+                    <div class="form-group">
+                      <label for="newMusicPath">新的音乐路径</label>
+                      <div class="path-input-group">
+                        <input type="text" id="newMusicPath" name="newMusicPath" placeholder="请输入新的音乐文件夹路径" required />
+                        <button type="button" id="browsePathBtn" class="btn-secondary">浏览</button>
+                      </div>
+                      <small>例如：C:\\Users\\用户名\\Music 或 D:\\音乐</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                      <button type="submit" class="primary">保存路径</button>
+                      <button type="button" id="testPathBtn" class="secondary">测试路径</button>
+                      <button type="button" id="resetPathBtn" class="secondary">重置为默认路径</button>
+                    </div>
+                  </form>
+                  
+                  <div class="path-status">
+                    <div id="pathStatusMessage" class="status-message"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="stat-item">
-              <span class="stat-number" id="commentsCount">0</span>
-              <span class="stat-label">发表评论</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number" id="playlistsCount">0</span>
-              <span class="stat-label">创建歌单</span>
+            
+            <!-- 账户管理标签页 -->
+            <div class="tab-content" id="account-management-tab">
+              <div class="logout-card">
+                <h3>账户管理</h3>
+                <p>安全退出当前账户，保护您的隐私</p>
+                <button id="profileLogoutBtn" class="logout-btn">退出登录</button>
+              </div>
             </div>
           </div>
         </div>
@@ -140,7 +534,7 @@
     window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
     window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
   </script>
-  <script src="/static/app.js"></script>
+  <script src="app.js"></script>
   <script>
     // 个人中心功能
     document.addEventListener('DOMContentLoaded', function() {
@@ -270,16 +664,432 @@
 
       // 跳转到登录
       goToLogin?.addEventListener('click', function() {
-        window.location.href = '/';
+        // 直接跳转到登录页面
+        window.location.href = '/login';
       });
 
       // 初始化
       checkAuthStatus();
+      
+      // 设置退出登录按钮事件
+      const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+      if (profileLogoutBtn) {
+        profileLogoutBtn.addEventListener('click', async function() {
+          if (confirm('确定要退出登录吗？')) {
+            try {
+              await fetch('/api/logout', { method: 'POST' });
+              
+              // 清除本地存储的用户信息
+              localStorage.removeItem('currentUser');
+              
+              // 触发退出登录事件，通知所有页面更新状态
+              window.dispatchEvent(new CustomEvent('userLogout'));
+              
+              // 更新导航栏状态
+              if (window.authManager) {
+                window.authManager.updateNavbarStatus(false);
+              }
+              
+              // 显示成功消息并跳转
+              alert('退出登录成功！');
+              window.location.href = '/';
+              
+            } catch (error) {
+              console.error('退出登录失败:', error);
+              alert('退出登录失败，请重试');
+            }
+          }
+        });
+      }
+    });
+
+    // 标签页切换功能
+    function setupTabNavigation() {
+      const navItems = document.querySelectorAll('.nav-item');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      navItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const tabId = this.getAttribute('data-tab');
+          
+          // 移除所有激活状态
+          navItems.forEach(nav => nav.classList.remove('active'));
+          tabContents.forEach(tab => tab.classList.remove('active'));
+          
+          // 激活当前标签页
+          this.classList.add('active');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+          
+          // 如果是"我发过的帖子"标签页，加载帖子数据
+          if (tabId === 'my-posts') {
+            loadMyPosts();
+          }
+        });
+      });
+    }
+
+    // 加载用户帖子
+    async function loadMyPosts() {
+      const postsList = document.getElementById('posts-list');
+      
+      try {
+        // 检查用户是否登录
+        const authResponse = await fetch('/api/check_auth');
+        const authData = await authResponse.json();
+        
+        if (!authData.authenticated) {
+          postsList.innerHTML = `
+            <div class="empty-state">
+              <h3>请先登录</h3>
+              <p>登录后查看您发过的帖子</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // 获取用户帖子
+        const response = await fetch('/api/forum/my-posts');
+        if (!response.ok) {
+          throw new Error('获取帖子失败');
+        }
+        
+        const posts = await response.json();
+        
+        if (!posts || posts.length === 0) {
+          postsList.innerHTML = `
+            <div class="empty-state">
+              <h3>暂无帖子</h3>
+              <p>您还没有发表过任何帖子</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // 显示帖子列表
+        postsList.innerHTML = posts.map(post => `
+          <div class="post-item" onclick="viewPost('${post.id}')">
+            <div class="post-title">${escapeHtml(post.title)}</div>
+            <div class="post-meta">
+              发布时间：${formatDate(post.created_at)} | 
+              回复数：${post.reply_count || 0} | 
+              浏览数：${post.view_count || 0}
+            </div>
+            <div class="post-content">
+              ${escapeHtml(post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content)}
+            </div>
+            <div class="post-stats">
+              <span>💬 ${post.reply_count || 0} 回复</span>
+              <span>👁️ ${post.view_count || 0} 浏览</span>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('加载用户帖子失败:', error);
+        postsList.innerHTML = `
+          <div class="empty-state">
+            <h3>加载失败</h3>
+            <p>请检查网络连接后重试</p>
+          </div>
+        `;
+      }
+    }
+
+    // 查看帖子详情
+    function viewPost(postId) {
+      window.location.href = `/forum/post/${postId}`;
+    }
+
+    // 工具函数：转义HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 工具函数：格式化日期
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    // 初始化标签页导航
+    document.addEventListener('DOMContentLoaded', function() {
+      setupTabNavigation();
+    });
+
+    // 标签页切换功能
+    function setupTabNavigation() {
+      const navItems = document.querySelectorAll('.nav-item');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      navItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const tabId = this.getAttribute('data-tab');
+          
+          // 移除所有激活状态
+          navItems.forEach(nav => nav.classList.remove('active'));
+          tabContents.forEach(tab => tab.classList.remove('active'));
+          
+          // 激活当前标签页
+          this.classList.add('active');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+          
+          // 如果是"我发过的帖子"标签页，加载帖子数据
+          if (tabId === 'my-posts') {
+            loadMyPosts();
+          }
+        });
+      });
+    }
+
+    // 加载用户帖子
+    async function loadMyPosts() {
+      const postsList = document.getElementById('posts-list');
+      
+      try {
+        // 检查用户是否登录
+        const authResponse = await fetch('/api/check_auth');
+        const authData = await authResponse.json();
+        
+        if (!authData.authenticated) {
+          postsList.innerHTML = `
+            <div class="empty-state">
+              <h3>请先登录</h3>
+              <p>登录后查看您发过的帖子</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // 获取用户帖子
+        const response = await fetch('/api/forum/my-posts');
+        if (!response.ok) {
+          throw new Error('获取帖子失败');
+        }
+        
+        const posts = await response.json();
+        
+        if (!posts || posts.length === 0) {
+          postsList.innerHTML = `
+            <div class="empty-state">
+              <h3>暂无帖子</h3>
+              <p>您还没有发表过任何帖子</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // 显示帖子列表
+        postsList.innerHTML = posts.map(post => `
+          <div class="post-item" onclick="viewPost('${post.id}')">
+            <div class="post-title">${escapeHtml(post.title)}</div>
+            <div class="post-meta">
+              发布时间：${formatDate(post.created_at)} | 
+              回复数：${post.reply_count || 0} | 
+              浏览数：${post.view_count || 0}
+            </div>
+            <div class="post-content">
+              ${escapeHtml(post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content)}
+            </div>
+            <div class="post-stats">
+              <span>💬 ${post.reply_count || 0} 回复</span>
+              <span>👁️ ${post.view_count || 0} 浏览</span>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('加载用户帖子失败:', error);
+        postsList.innerHTML = `
+          <div class="empty-state">
+            <h3>加载失败</h3>
+            <p>请检查网络连接后重试</p>
+          </div>
+        `;
+      }
+    }
+
+    // 查看帖子详情
+    function viewPost(postId) {
+      window.location.href = `/forum/post/${postId}`;
+    }
+
+    // 工具函数：转义HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 工具函数：格式化日期
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    // 初始化标签页导航
+    document.addEventListener('DOMContentLoaded', function() {
+      setupTabNavigation();
     });
 
     // 初始化登录状态管理
     if (window.authManager) {
       window.authManager.initAllPagesAuth();
+    }
+
+    // 音乐路径设置功能
+    document.addEventListener('DOMContentLoaded', function() {
+      setupMusicPathSettings();
+    });
+
+    function setupMusicPathSettings() {
+      const musicPathForm = document.getElementById('musicPathForm');
+      const browsePathBtn = document.getElementById('browsePathBtn');
+      const testPathBtn = document.getElementById('testPathBtn');
+      const resetPathBtn = document.getElementById('resetPathBtn');
+      const currentMusicPath = document.getElementById('currentMusicPath');
+      const newMusicPath = document.getElementById('newMusicPath');
+      const pathStatusMessage = document.getElementById('pathStatusMessage');
+
+      // 加载当前音乐路径
+      loadCurrentMusicPath();
+
+      // 浏览路径按钮
+      browsePathBtn?.addEventListener('click', function() {
+        // 由于浏览器安全限制，使用提示框让用户输入路径
+        const path = prompt('请输入音乐文件夹路径（例如：C:\\Users\\用户名\\Music）:');
+        if (path) {
+          newMusicPath.value = path;
+        }
+      });
+
+      // 测试路径按钮
+      testPathBtn?.addEventListener('click', async function() {
+        const path = newMusicPath.value.trim();
+        if (!path) {
+          showStatusMessage('请输入要测试的路径', 'error');
+          return;
+        }
+
+        try {
+          showStatusMessage('正在测试路径...', 'info');
+          
+          const response = await fetch('/api/test_music_path', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ path: path })
+          });
+
+          const result = await response.json();
+          
+          if (response.ok) {
+            if (result.exists) {
+              showStatusMessage(`路径测试成功！找到 ${result.fileCount || 0} 个音乐文件`, 'success');
+            } else {
+              showStatusMessage('路径不存在或无法访问', 'error');
+            }
+          } else {
+            showStatusMessage(result.error || '路径测试失败', 'error');
+          }
+        } catch (error) {
+          console.error('测试路径失败:', error);
+          showStatusMessage('网络错误，请检查连接后重试', 'error');
+        }
+      });
+
+      // 重置路径按钮
+      resetPathBtn?.addEventListener('click', function() {
+        if (confirm('确定要重置为默认路径吗？')) {
+          const defaultPath = 'C:\\Users\\28890\\Desktop\\music';
+          newMusicPath.value = defaultPath;
+          showStatusMessage('已重置为默认路径，请点击保存应用更改', 'info');
+        }
+      });
+
+      // 保存路径表单
+      musicPathForm?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const path = newMusicPath.value.trim();
+        if (!path) {
+          showStatusMessage('请输入音乐路径', 'error');
+          return;
+        }
+
+        try {
+          showStatusMessage('正在保存路径...', 'info');
+          
+          const response = await fetch('/api/update_music_dir', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ musicDir: path })
+          });
+
+          const result = await response.json();
+          
+          if (response.ok) {
+            showStatusMessage('路径保存成功！系统将重新扫描音乐文件', 'success');
+            
+            // 更新当前路径显示
+            currentMusicPath.textContent = path;
+            
+            // 清空输入框
+            newMusicPath.value = '';
+            
+            // 通知首页刷新音乐数据
+            setTimeout(() => {
+              if (window.opener) {
+                window.opener.postMessage({ type: 'musicPathUpdated' }, '*');
+              }
+            }, 1000);
+            
+          } else {
+            showStatusMessage(result.error || '保存失败', 'error');
+          }
+        } catch (error) {
+          console.error('保存路径失败:', error);
+          showStatusMessage('网络错误，请检查连接后重试', 'error');
+        }
+      });
+
+      // 加载当前音乐路径
+      async function loadCurrentMusicPath() {
+        try {
+          const response = await fetch('/api/get_music_dir');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.musicDir) {
+              currentMusicPath.textContent = data.musicDir;
+            }
+          }
+        } catch (error) {
+          console.error('加载当前音乐路径失败:', error);
+        }
+      }
+
+      // 显示状态消息
+      function showStatusMessage(message, type) {
+        pathStatusMessage.textContent = message;
+        pathStatusMessage.className = 'status-message ' + type;
+        
+        // 5秒后自动清除消息
+        setTimeout(() => {
+          pathStatusMessage.textContent = '';
+          pathStatusMessage.className = 'status-message';
+        }, 5000);
+      }
+
+      // 当切换到音乐路径设置标签页时，加载当前路径
+      document.addEventListener('click', function(e) {
+        if (e.target.matches('.nav-item[data-tab="music-path-settings"]')) {
+          loadCurrentMusicPath();
+        }
+      });
     }
   </script>
 </body>

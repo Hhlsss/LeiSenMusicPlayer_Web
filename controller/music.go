@@ -624,29 +624,29 @@ func HandleAddComment(w http.ResponseWriter, r *http.Request) {
 // GET /api/check_auth
 func HandleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeErr(w, http.StatusMethodNotAllowed, "method not allowed")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"})
 		return
 	}
 	
-	userID, err := service.GetCurrentUserID(r)
+	userUUID, err := service.GetCurrentUserID(r)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"authenticated": false,
-			"user_id": 0,
+			"user_id": "",
 			"user": nil,
 		})
 		return
 	}
 	
-	// 获取用户信息（从数据库获取最新数据）
-	userInfo, err := db.GetUserProfile(userID)
+	// 获取用户信息（从数据库获取最新数据，使用UUID格式）
+	userInfo, err := db.GetUserProfileByUUID(userUUID)
 	if err != nil {
-		// 如果数据库获取失败，尝试从邮箱获取用户信息
-		// 这里简化处理，实际应该从cookie中获取邮箱信息
-		// 暂时使用默认信息，但避免使用"用户+ID"的格式
+		// 如果数据库获取失败，使用默认信息
 		userInfo = map[string]interface{}{
-			"id":       userID,
+			"id":       userUUID,
 			"nickname": "用户",
 			"email":    "",
 		}
@@ -665,7 +665,7 @@ func HandleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"authenticated": true,
-		"user_id": userID,
+		"user_id": userUUID,
 		"user": userInfo,
 	})
 }
@@ -691,21 +691,21 @@ func HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// 获取当前用户ID
-	userID, err := service.GetCurrentUserID(r)
+	// 获取当前用户UUID
+	userUUID, err := service.GetCurrentUserID(r)
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, "user not authenticated")
 		return
 	}
 	
-	// 更新用户昵称到数据库
-	if err := db.UpdateUserNickname(userID, request.Nickname); err != nil {
+	// 更新用户昵称到数据库（使用UUID格式）
+	if err := db.UpdateUserNicknameByUUID(userUUID, request.Nickname); err != nil {
 		writeErr(w, http.StatusInternalServerError, "更新昵称失败: "+err.Error())
 		return
 	}
 	
-	// 获取更新后的用户信息
-	userInfo, err := db.GetUserProfile(userID)
+	// 获取更新后的用户信息（使用UUID格式）
+	userInfo, err := db.GetUserProfileByUUID(userUUID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "获取用户信息失败: "+err.Error())
 		return

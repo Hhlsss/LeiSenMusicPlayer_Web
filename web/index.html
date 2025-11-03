@@ -13,6 +13,8 @@
       <a href="/artists">歌手</a>
       <a href="/albums">专辑</a>
       <a href="/favorites">我的收藏</a>
+      <a href="/upload">上传</a>
+      <a href="/forum">音乐论坛</a>
       <a href="/profile">个人中心</a>
     </nav>
     <div class="search">
@@ -20,8 +22,6 @@
     </div>
     <div class="user-actions">
       <button class="primary">创建歌单</button>
-      <button id="loginOpen">登录</button>
-      <button id="registerOpen">注册</button>
       <button id="logoutBtn" class="hidden">退出</button>
       <span id="userNickname" class="hidden nickname"></span>
     </div>
@@ -29,91 +29,114 @@
 
   <section class="banner">
     <div class="carousel">
-      <div class="slides">
-        <div class="slide active" style="background-image:url('https://picsum.photos/id/1015/1200/300');"></div>
-        <div class="slide" style="background-image:url('https://picsum.photos/id/1025/1200/300');"></div>
-        <div class="slide" style="background-image:url('https://picsum.photos/id/1042/1200/300');"></div>
+      <div class="slides" id="carouselSlides">
+        <!-- 轮播图将动态加载音乐封面 -->
+        <div class="slide active" style="background-image:url('https://picsum.photos/id/1062/1920/600');"></div>
+        <div class="slide" style="background-image:url('https://picsum.photos/id/1062/1920/600');"></div>
+        <div class="slide" style="background-image:url('https://picsum.photos/id/1062/1920/600');"></div>
+        <div class="slide" style="background-image:url('https://picsum.photos/id/1062/1920/600');"></div>
+        <div class="slide" style="background-image:url('https://picsum.photos/id/1062/1920/600');"></div>
       </div>
       <button class="carousel-btn prev">&#10094;</button>
       <button class="carousel-btn next">&#10095;</button>
     </div>
-  </section>
-
-  <main class="content">
-    <div class="section-header">
-      <h2>热门推荐</h2>
-      <div class="tabs">
-        <a href="#" class="active">推荐</a>
-        <a href="#">华语</a>
-        <a href="#">欧美</a>
-        <a href="#">韩语</a>
-        <a href="#">日语</a>
+    
+    <!-- 智能音乐助手聊天机器人 -->
+    <div class="ai-assistant">
+      <h3>🎵 智能音乐助手</h3>
+      <div class="ai-chat-container">
+        <div class="ai-messages" id="aiMessages">
+          <div class="ai-message ai-bot">
+            <div class="message-content">您好！我是您的智能音乐助手，可以帮您推荐歌曲、解答音乐问题、管理歌单等。有什么可以帮您的吗？</div>
+          </div>
+        </div>
+        <div class="ai-input-container">
+          <input type="text" class="ai-input" id="aiInput" placeholder="输入您的问题..." maxlength="200">
+          <button class="ai-send-btn" id="aiSendBtn">发送</button>
+        </div>
       </div>
     </div>
 
-    <section class="grid">
-      <!-- 卡片示例，点击跳转到歌曲页 -->
-      <a class="card" href="/song">
-        <div class="thumb" style="background-image:url('https://picsum.photos/id/1062/300/300');"></div>
-        <div class="card-info">
-          <h3></h3>
-          <p>Vaundy</p>
-          <span class="playcount">36,807</span>
-        </div>
-      </a>
+  </section>
 
-      <a class="card" href="/song">
-        <div class="thumb" style="background-image:url('https://picsum.photos/id/1035/300/300');"></div>
-        <div class="card-info">
-          <h3>NEW MUSIC</h3>
-          <p>合辑推荐</p>
-          <span class="playcount">59,147</span>
-        </div>
-      </a>
-
-      <a class="card" href="/song">
-        <div class="thumb" style="background-image:url('https://picsum.photos/id/1050/300/300');"></div>
-        <div class="card-info">
-          <h3>流行精选</h3>
-          <p>今日热门</p>
-          <span class="playcount">25,947</span>
-        </div>
-      </a>
-
-      <a class="card" href="/song">
-        <div class="thumb" style="background-image:url('https://picsum.photos/id/1048/300/300');"></div>
-        <div class="card-info">
-          <h3>夏日电音</h3>
-          <p>派对必备</p>
-          <span class="playcount">8,978</span>
-        </div>
-      </a>
-
-      <a class="card" href="/song">
-        <div class="thumb" style="background-image:url('https://picsum.photos/id/103/300/300');"></div>
-        <div class="card-info">
-          <h3>摇滚热潮</h3>
-          <p>乐队精选</p>
-          <span class="playcount">7,525</span>
-        </div>
-      </a>
-    </section>
-
-    <aside class="sidebar">
-      <div class="ai-assistant">
-        <h3>智能AI助手</h3>
-        <div class="ai-chat-container">
-          <div class="ai-messages" id="aiMessages">
-            <div class="ai-message ai-bot">
-              <div class="message-content">你好！我是你的音乐AI助手，我可以帮你推荐歌曲、查找歌词、了解音乐知识等。有什么可以帮你的吗？</div>
-            </div>
-          </div>
-          <div class="ai-input-container">
-            <input type="text" id="aiInput" placeholder="输入你的问题..." class="ai-input" />
-            <button id="aiSend" class="ai-send-btn">发送</button>
-          </div>
+  <main class="content">
+    <!-- 本地音乐库展示区域 -->
+    <div class="local-music-container">
+    <section class="local-music-section">
+      <div class="section-header">
+        <h2>🎵 本地音乐库</h2>
+        <div class="section-actions">
+          <button id="refreshMusicBtn" class="btn-secondary">刷新音乐库</button>
         </div>
       </div>
+      
+      <!-- 音乐统计信息 -->
+      <div class="music-stats">
+        <div class="stat-item">
+          <span class="stat-number" id="totalSongs">0</span>
+          <span class="stat-label">总歌曲数</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="totalAlbums">0</span>
+          <span class="stat-label">专辑数</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="totalArtists">0</span>
+          <span class="stat-label">歌手数</span>
+        </div>
+      </div>
+
+
+
+      <!-- 本地音乐网格展示（新增功能） -->
+      <div class="section-header">
+        <h2>🎵 本地音乐库</h2>
+        <div class="tabs">
+          <a href="#" class="active" onclick="showGridLayout()">封面视图</a>
+          <a href="#" onclick="showListLayout()">列表视图</a>
+        </div>
+      </div>
+
+      <!-- 音乐网格容器 -->
+      <section id="localMusicGrid" class="grid">
+        <div class="loading">正在加载本地音乐...</div>
+      </section>
+
+      <!-- 本地音乐列表（保留原有功能） -->
+      <div id="musicListContainer" class="music-list-container hidden">
+        <div class="music-list-header">
+          <span class="header-title">歌曲</span>
+          <span class="header-artist">歌手</span>
+          <span class="header-album">专辑</span>
+          <span class="header-actions">操作</span>
+        </div>
+        <div id="localMusicList" class="music-list">
+          <div class="loading">正在加载本地音乐...</div>
+        </div>
+      </div>
+
+      <!-- 空状态提示 -->
+      <div id="empty-local-music" class="empty-state hidden">
+     
+      </div>
+    </section>
+    </div>
+
+    <!-- 音乐数据加载区域 -->
+    <div id="music-data-container">
+      <!-- 这里将动态加载云端音乐数据 -->
+    </div>
+
+    <!-- 空状态提示 -->
+    <div id="empty-state" class="empty-state hidden">
+      <div class="empty-icon">🎵</div>
+      <h3>暂无音乐数据</h3>
+      <p>您还没有上传任何音乐文件，请先上传音乐文件</p>
+      <a href="/upload" class="btn-gradient">上传音乐</a>
+    </div>
+
+    <aside class="sidebar">
+      <!-- 侧边栏内容可以添加其他功能模块 -->
     </aside>
   </main>
 
@@ -198,8 +221,559 @@
     window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
     window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
   </script>
-  <script src="/static/app.js"></script>
+  <script src="app.js"></script>
   <script>
+    // 动态加载音乐数据
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadLocalMusicData();
+      await loadMusicData();
+      
+      // 更新轮播图（在音乐数据加载后）
+      await updateCarouselWithCovers();
+      
+      // 初始化轮播图功能
+      setTimeout(() => {
+        initCarousel();
+      }, 100);
+    });
+
+    // 加载本地音乐数据
+    async function loadLocalMusicData() {
+      const musicGrid = document.getElementById('localMusicGrid');
+      const musicList = document.getElementById('localMusicList');
+      const emptyState = document.getElementById('empty-local-music');
+      const totalSongs = document.getElementById('totalSongs');
+      const totalAlbums = document.getElementById('totalAlbums');
+      const totalArtists = document.getElementById('totalArtists');
+      
+      try {
+        // 显示加载状态
+        musicGrid.innerHTML = '<div class="loading">正在加载本地音乐...</div>';
+        musicList.innerHTML = '<div class="loading">正在加载本地音乐...</div>';
+        
+        // 获取本地音乐数据
+        const response = await fetch('/api/music');
+        const tracks = await response.json();
+        
+        // 检查是否有音乐数据
+        if (!tracks || tracks.length === 0) {
+          // 没有音乐数据，显示空状态
+          musicGrid.innerHTML = '';
+          musicList.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          
+          // 重置统计信息
+          totalSongs.textContent = '0';
+          totalAlbums.textContent = '0';
+          totalArtists.textContent = '0';
+          return;
+        }
+        
+        // 有音乐数据，隐藏空状态
+        emptyState.classList.add('hidden');
+        
+        // 更新统计信息
+        updateMusicStats(tracks);
+        
+        // 渲染两种视图
+        renderMusicCardGrid(tracks, musicGrid);
+        renderLocalMusicList(tracks, musicList);
+        
+      } catch (error) {
+        console.error('加载本地音乐数据失败:', error);
+        musicGrid.innerHTML = '<div class="no-results">加载失败，请刷新页面重试</div>';
+        musicList.innerHTML = '<div class="no-results">加载失败，请刷新页面重试</div>';
+        emptyState.classList.remove('hidden');
+      }
+    }
+
+    // 更新音乐统计信息
+    function updateMusicStats(tracks) {
+      const totalSongs = document.getElementById('totalSongs');
+      const totalAlbums = document.getElementById('totalAlbums');
+      const totalArtists = document.getElementById('totalArtists');
+      
+      // 计算专辑数（去重）
+      const albums = new Set();
+      const artists = new Set();
+      
+      tracks.forEach(track => {
+        if (track.album) albums.add(track.album);
+        if (track.artist) artists.add(track.artist);
+      });
+      
+      totalSongs.textContent = tracks.length;
+      totalAlbums.textContent = albums.size;
+      totalArtists.textContent = artists.size;
+    }
+
+    // 渲染本地音乐列表
+    function renderLocalMusicList(tracks, container) {
+      if (!tracks || tracks.length === 0) {
+        container.innerHTML = '<div class="no-results">暂无本地音乐</div>';
+        return;
+      }
+      
+      const html = tracks.map(track => `
+        <div class="music-list-item" data-track-id="${track.id}">
+          <div class="song-title">${track.title || '未知标题'}</div>
+          <div class="song-artist">${track.artist || '未知艺术家'}</div>
+          <div class="song-album">${track.album || '未知专辑'}</div>
+          <div class="music-list-actions">
+            <button class="play-btn" onclick="playLocalTrack(${track.id})">播放</button>
+            <button class="detail-btn" onclick="viewTrackDetail(${track.id})">详情</button>
+          </div>
+        </div>
+      `).join('');
+      
+      container.innerHTML = html;
+    }
+
+    // 新增：渲染音乐卡片网格布局 - 从新项目引入
+    function renderMusicCardGrid(tracks, container) {
+      if (!tracks || tracks.length === 0) {
+        container.innerHTML = '<div class="no-results">暂无本地音乐</div>';
+        return;
+      }
+      
+      const html = tracks.map(track => `
+        <a class="card" href="/song?id=${track.id}">
+          <div class="thumb" style="background-image:url('${track.hasCover ? `/api/cover?id=${track.id}` : 'https://picsum.photos/id/1062/300/300'}');"></div>
+          <div class="card-info">
+            <h3>${track.title || '未知标题'}</h3>
+            <p>${track.artist || '未知艺术家'}</p>
+            <span class="playcount">${track.hasLyrics ? '含歌词' : '无歌词'}</span>
+          </div>
+        </a>
+      `).join('');
+      
+      container.innerHTML = html;
+    }
+
+    // 新增：视图切换功能
+    function showGridLayout() {
+      const gridContainer = document.getElementById('localMusicGrid');
+      const listContainer = document.getElementById('musicListContainer');
+      const tabs = document.querySelectorAll('.tabs a');
+      
+      gridContainer.classList.remove('hidden');
+      listContainer.classList.add('hidden');
+      
+      tabs.forEach(tab => tab.classList.remove('active'));
+      tabs[0].classList.add('active');
+    }
+
+    function showListLayout() {
+      const gridContainer = document.getElementById('localMusicGrid');
+      const listContainer = document.getElementById('musicListContainer');
+      const tabs = document.querySelectorAll('.tabs a');
+      
+      gridContainer.classList.add('hidden');
+      listContainer.classList.remove('hidden');
+      
+      tabs.forEach(tab => tab.classList.remove('active'));
+      tabs[1].classList.add('active');
+    }
+
+    // 新增：渲染音乐卡片网格布局 - 从新项目引入
+    function renderMusicCardGrid(tracks, container) {
+      if (!tracks || tracks.length === 0) {
+        container.innerHTML = '<div class="no-results">暂无本地音乐</div>';
+        return;
+      }
+      
+      const html = tracks.map(track => `
+        <a class="card" href="/song?id=${track.id}">
+          <div class="thumb" style="background-image:url('${track.hasCover ? `/api/cover?id=${track.id}` : 'https://picsum.photos/id/1062/300/300'}');"></div>
+          <div class="card-info">
+            <h3>${track.title || '未知标题'}</h3>
+            <p>${track.artist || '未知艺术家'}</p>
+            <span class="playcount">${track.hasLyrics ? '含歌词' : '无歌词'}</span>
+          </div>
+        </a>
+      `).join('');
+      
+      container.innerHTML = html;
+    }
+
+    // 新增：视图切换功能
+    function showGridLayout() {
+      const gridContainer = document.getElementById('localMusicGrid');
+      const listContainer = document.getElementById('musicListContainer');
+      const tabs = document.querySelectorAll('.tabs a');
+      
+      gridContainer.classList.remove('hidden');
+      listContainer.classList.add('hidden');
+      
+      tabs.forEach(tab => tab.classList.remove('active'));
+      tabs[0].classList.add('active');
+    }
+
+    function showListLayout() {
+      const gridContainer = document.getElementById('localMusicGrid');
+      const listContainer = document.getElementById('musicListContainer');
+      const tabs = document.querySelectorAll('.tabs a');
+      
+      gridContainer.classList.add('hidden');
+      listContainer.classList.remove('hidden');
+      
+      tabs.forEach(tab => tab.classList.remove('active'));
+      tabs[1].classList.add('active');
+    }
+
+    // 播放本地音乐
+    async function playLocalTrack(trackId) {
+      try {
+        // 获取歌曲信息
+        const response = await fetch(`/api/track?id=${trackId}`);
+        if (!response.ok) throw new Error('歌曲信息加载失败');
+        const track = await response.json();
+        
+        // 设置音频源
+        const audio = document.getElementById('audio');
+        audio.src = `/api/audio?id=${trackId}`;
+        
+        // 更新播放器信息
+        document.getElementById('playerTitle').textContent = track.title || '未知标题';
+        document.getElementById('playerArtist').textContent = track.artist || '未知艺术家';
+        
+        // 设置封面
+        const miniCover = document.getElementById('miniCover');
+        if (track.hasCover) {
+          miniCover.src = `/api/cover?id=${trackId}`;
+        } else {
+          miniCover.src = 'https://picsum.photos/id/1062/60/60';
+        }
+        
+        // 播放
+        await audio.play();
+        
+      } catch (error) {
+        console.error('播放歌曲失败:', error);
+        alert('播放失败，请稍后重试');
+      }
+    }
+
+    // 查看歌曲详情
+    function viewTrackDetail(trackId) {
+      // 跳转到歌曲详情页
+      window.location.href = `/song?id=${trackId}`;
+    }
+
+    // 刷新音乐库
+    document.getElementById('refreshMusicBtn').addEventListener('click', async () => {
+      await loadLocalMusicData();
+      alert('音乐库已刷新');
+    });
+
+    // 设置音乐目录
+    document.getElementById('setupMusicDirBtn').addEventListener('click', () => {
+      const playlistModal = document.getElementById('playlistModal');
+      const modalOverlay = document.getElementById('modalOverlay');
+      
+      if (playlistModal && modalOverlay) {
+        modalOverlay.classList.remove('hidden');
+        playlistModal.classList.remove('hidden');
+      }
+    });
+
+    // 导入歌单按钮
+    document.getElementById('importPlaylistBtn').addEventListener('click', () => {
+      const playlistModal = document.getElementById('playlistModal');
+      const modalOverlay = document.getElementById('modalOverlay');
+      
+      if (playlistModal && modalOverlay) {
+        modalOverlay.classList.remove('hidden');
+        playlistModal.classList.remove('hidden');
+      }
+    });
+
+    // 加载音乐数据
+    async function loadMusicData() {
+      const container = document.getElementById('music-data-container');
+      const emptyState = document.getElementById('empty-state');
+      
+      try {
+        // 显示加载状态
+        container.innerHTML = '<div class="loading">正在加载音乐数据...</div>';
+        
+        // 获取云端音乐数据
+        const response = await fetch('/api/cloud/music');
+        const data = await response.json();
+        
+        // 检查是否有音乐数据
+        if (data.total_count === 0) {
+          // 没有音乐数据，显示空状态
+          container.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        
+        // 有音乐数据，隐藏空状态
+        emptyState.classList.add('hidden');
+        
+        // 渲染音乐数据
+        renderMusicData(data, container);
+        
+      } catch (error) {
+        console.error('加载音乐数据失败:', error);
+        container.innerHTML = '<div class="no-results">加载失败，请刷新页面重试</div>';
+        emptyState.classList.remove('hidden');
+      }
+    }
+
+    // 渲染音乐数据
+    function renderMusicData(data, container) {
+      let html = '';
+      
+      // 渲染云端音乐
+      if (data.cloud_music && data.cloud_music.length > 0) {
+        html += `
+          <div class="music-section">
+            <h2>云端音乐 (${data.cloud_music.length})</h2>
+            <div class="music-grid">
+              ${data.cloud_music.map(music => createMusicCard(music, 'cloud')).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      // 渲染本地音乐
+      if (data.local_music && data.local_music.length > 0) {
+        html += `
+          <div class="music-section">
+            <h2>本地音乐 (${data.local_music.length})</h2>
+            <div class="music-grid">
+              ${data.local_music.map(music => createMusicCard(music, 'local')).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = html;
+      
+      // 添加音乐卡片点击事件
+      container.querySelectorAll('.music-card').forEach(card => {
+        card.addEventListener('click', function() {
+          const musicId = this.dataset.musicId;
+          const isCloud = this.dataset.source === 'cloud';
+          playMusic(musicId, isCloud);
+        });
+      });
+    }
+
+    // 创建音乐卡片HTML
+    function createMusicCard(music, source) {
+      const coverUrl = music.cover || 'https://picsum.photos/300/300';
+      const duration = formatDuration(music.duration || 0);
+      
+      return `
+        <div class="music-card" data-music-id="${music.id}" data-source="${source}">
+          <div class="music-cover" style="background-image: url('${coverUrl}')"></div>
+          <div class="music-info">
+            <div class="music-title">${music.title || '未知标题'}</div>
+            <div class="music-artist">${music.artist || '未知艺术家'}</div>
+            <div class="music-meta">
+              <span class="music-duration">${duration}</span>
+              <span class="music-source ${source}">${source === 'cloud' ? '云端' : '本地'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 格式化时长
+    function formatDuration(seconds) {
+      if (!seconds) return '00:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // 播放音乐
+    function playMusic(musicId, isCloud) {
+      if (window.cloudMusicPlayer) {
+        window.cloudMusicPlayer.playCloudMusic(musicId, isCloud);
+      } else {
+        // 如果没有云端播放器，使用默认播放方式
+        const audio = document.getElementById('audio');
+        if (audio) {
+          if (isCloud) {
+            audio.src = `/api/cloud/stream?id=${encodeURIComponent(musicId)}`;
+          } else {
+            audio.src = `/api/audio?id=${encodeURIComponent(musicId)}`;
+          }
+          audio.play();
+        }
+      }
+    }
+
+    // 轮播图功能已在主 DOMContentLoaded 中调用，这里不再重复初始化
+
+    // 更新轮播图：随机选择5张音乐封面
+    async function updateCarouselWithCovers() {
+      try {
+        // 获取本地音乐列表
+        const response = await fetch('/api/music');
+        if (!response.ok) return;
+        
+        const tracks = await response.json();
+        if (!Array.isArray(tracks) || tracks.length === 0) return;
+        
+        // 筛选出有封面的歌曲
+        const tracksWithCover = tracks.filter(track => track.hasCover);
+        
+        if (tracksWithCover.length === 0) {
+          console.log('没有找到带封面的歌曲，使用默认图片');
+          return;
+        }
+        
+        // 随机选择最多5张封面
+        const shuffled = [...tracksWithCover].sort(() => Math.random() - 0.5);
+        const selectedCovers = shuffled.slice(0, Math.min(5, tracksWithCover.length));
+        
+        // 获取轮播图容器
+        const slidesContainer = document.getElementById('carouselSlides');
+        if (!slidesContainer) return;
+        
+        // 清空现有轮播图
+        slidesContainer.innerHTML = '';
+        
+        // 创建新的轮播图幻灯片
+        selectedCovers.forEach((track, index) => {
+          const slide = document.createElement('div');
+          slide.className = 'slide';
+          if (index === 0) {
+            slide.classList.add('active');
+          }
+          
+          // 使用音乐封面
+          const coverUrl = `/api/cover?id=${track.id}`;
+          slide.style.backgroundImage = `url('${coverUrl}')`;
+          
+          // 添加点击事件，点击封面跳转到歌曲详情页
+          slide.style.cursor = 'pointer';
+          slide.addEventListener('click', () => {
+            window.location.href = `/song?id=${track.id}`;
+          });
+          
+          slidesContainer.appendChild(slide);
+        });
+        
+        // 如果选择的封面少于5张，用默认图片填充
+        while (slidesContainer.children.length < 5) {
+          const slide = document.createElement('div');
+          slide.className = 'slide';
+          slide.style.backgroundImage = "url('https://picsum.photos/id/1062/1920/600')";
+          slidesContainer.appendChild(slide);
+        }
+        
+        console.log('轮播图已更新，使用了', selectedCovers.length, '张音乐封面');
+      } catch (error) {
+        console.error('更新轮播图失败:', error);
+      }
+    }
+
+    // 初始化轮播图功能（左右切换）
+    function initCarousel() {
+      const slides = document.querySelectorAll('.slide');
+      const prevBtn = document.querySelector('.carousel-btn.prev');
+      const nextBtn = document.querySelector('.carousel-btn.next');
+      
+      if (!slides.length) {
+        console.warn('未找到轮播图幻灯片');
+        return;
+      }
+      
+      let currentSlide = 0;
+      let autoSlideInterval = null;
+      
+      function showSlide(index) {
+        // 确保索引在有效范围内
+        if (index < 0) index = slides.length - 1;
+        if (index >= slides.length) index = 0;
+        
+        // 移除所有活动状态
+        slides.forEach(slide => slide.classList.remove('active'));
+        
+        // 添加活动状态到当前幻灯片
+        if (slides[index]) {
+          slides[index].classList.add('active');
+        }
+        
+        currentSlide = index;
+      }
+      
+      function nextSlide() {
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+      }
+      
+      function prevSlide() {
+        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        showSlide(currentSlide);
+      }
+      
+      // 绑定左右按钮事件
+      if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          prevSlide();
+          // 重置自动轮播
+          resetAutoSlide();
+        });
+      }
+      
+      if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          nextSlide();
+          // 重置自动轮播
+          resetAutoSlide();
+        });
+      }
+      
+      // 自动轮播功能
+      function startAutoSlide() {
+        // 清除之前的定时器
+        if (autoSlideInterval) {
+          clearInterval(autoSlideInterval);
+        }
+        // 每5秒自动切换
+        autoSlideInterval = setInterval(() => {
+          nextSlide();
+        }, 5000);
+      }
+      
+      function resetAutoSlide() {
+        // 重置自动轮播
+        if (autoSlideInterval) {
+          clearInterval(autoSlideInterval);
+        }
+        startAutoSlide();
+      }
+      
+      // 鼠标悬停时暂停自动轮播
+      const carousel = document.querySelector('.carousel');
+      if (carousel) {
+        carousel.addEventListener('mouseenter', () => {
+          if (autoSlideInterval) {
+            clearInterval(autoSlideInterval);
+          }
+        });
+        
+        carousel.addEventListener('mouseleave', () => {
+          startAutoSlide();
+        });
+      }
+      
+      // 初始化：显示第一张，开始自动轮播
+      showSlide(0);
+      startAutoSlide();
+      
+      console.log('轮播图初始化完成，共', slides.length, '张图片');
+    }
+
     // 导入本地歌单功能
     document.addEventListener('DOMContentLoaded', () => {
       const playlistsBtn = document.getElementById('playlistsBtn');
@@ -210,11 +784,13 @@
       const playlistForm = document.getElementById('playlistForm');
       const currentMusicDir = document.getElementById('currentMusicDir');
 
-      // 打开导入模态框
-      playlistsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModal(playlistModal);
-      });
+      // 打开导入模态框（如果元素存在）
+      if (playlistsBtn && playlistModal) {
+        playlistsBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          openModal(playlistModal);
+        });
+      }
 
       // 浏览文件夹（模拟功能）
       browseBtn.addEventListener('click', () => {
@@ -321,35 +897,185 @@
       window.authManager.initAllPagesAuth();
     }
 
-    // AI助手功能
+    // 智能音乐助手功能
     document.addEventListener('DOMContentLoaded', () => {
+      initAIAssistant();
+    });
+
+    function initAIAssistant() {
       const aiMessages = document.getElementById('aiMessages');
       const aiInput = document.getElementById('aiInput');
-      const aiSend = document.getElementById('aiSend');
+      const aiSendBtn = document.getElementById('aiSendBtn');
+      
+      if (!aiMessages || !aiInput || !aiSendBtn) return;
+
+      // Coze API配置 - 多端点尝试配置
+      const COZE_API_TOKEN = 'pat_1mZRTEMafM2v3ZjLZa2ioCoNRBp86Dh3bKl3X4667qtYgB0FLbOVW90fdkppYsaq';
+      
+      // 多个可能的API端点
+      const API_ENDPOINTS = [
+        {
+          name: 'Coze API v2',
+          url: 'https://api.coze.cn/open_api/v2/chat',
+          format: 'coze_v2'
+        },
+        {
+          name: 'Coze API v1',
+          url: 'https://api.coze.cn/v1/chat/completions',
+          format: 'openai'
+        },
+        {
+          name: 'Coze WebSocket兼容',
+          url: 'https://api.coze.cn/v1/chat/messages',
+          format: 'coze_ws'
+        }
+      ];
+      
+      let currentEndpointIndex = 0;
+      
+      // 智能体配置信息
+      const BOT_ID = '7567959568312369215'; // 您的智能体ID
+      const SPACE_ID = '7559750439882375218'; // 您的空间ID
 
       // 发送消息函数
-      function sendMessage() {
+      async function sendMessage() {
         const message = aiInput.value.trim();
         if (!message) return;
 
         // 添加用户消息
         addMessage(message, 'user');
         aiInput.value = '';
-        aiSend.disabled = true;
+        aiSendBtn.disabled = true;
 
-        // 模拟AI回复
-        setTimeout(() => {
-          const aiResponse = generateAIResponse(message);
-          addMessage(aiResponse, 'bot');
-          aiSend.disabled = false;
-          aiInput.focus();
-        }, 1000);
+        // 显示加载状态
+        const loadingMessage = addMessage('正在思考中...', 'bot', true);
+
+        try {
+          const currentEndpoint = API_ENDPOINTS[currentEndpointIndex];
+          console.log(`尝试API端点 ${currentEndpointIndex + 1}/${API_ENDPOINTS.length}:`, currentEndpoint.name);
+          
+          // 根据端点格式构建请求体
+          let requestBody;
+          if (currentEndpoint.format === 'coze_v2') {
+            requestBody = {
+              conversation_id: 'music_assistant_' + Date.now(),
+              bot_id: BOT_ID,
+              user: 'music_web_user',
+              query: message,
+              stream: false
+            };
+          } else if (currentEndpoint.format === 'openai') {
+            requestBody = {
+              model: 'coze',
+              messages: [
+                {
+                  role: 'user',
+                  content: message
+                }
+              ],
+              max_tokens: 500,
+              temperature: 0.7
+            };
+          } else {
+            requestBody = {
+              bot_id: BOT_ID,
+              message: message,
+              stream: false
+            };
+          }
+          
+          console.log('请求参数:', requestBody);
+          
+          const response = await fetch(currentEndpoint.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${COZE_API_TOKEN}`
+            },
+            body: JSON.stringify(requestBody)
+          });
+          
+          console.log('API响应状态:', response.status, response.statusText);
+
+          if (!response.ok) {
+            // 如果当前端点失败，尝试下一个端点
+            if (currentEndpointIndex < API_ENDPOINTS.length - 1) {
+              currentEndpointIndex++;
+              console.log('切换到下一个API端点:', API_ENDPOINTS[currentEndpointIndex].name);
+              
+              // 移除加载状态
+              loadingMessage.remove();
+              
+              // 重新发送消息
+              addMessage('正在尝试其他连接方式...', 'bot', true);
+              return sendMessage();
+            }
+            
+            throw new Error(`所有API端点都失败: ${response.status} - ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log('API响应数据:', data);
+          
+          // 移除加载状态
+          loadingMessage.remove();
+          
+          // 添加AI回复 - 适配Coze API响应格式
+          if (data.messages && data.messages.length > 0) {
+            // Coze API返回格式：messages数组包含回复内容
+            const aiResponse = data.messages[0].content;
+            addMessage(aiResponse, 'bot');
+          } else if (data.choices && data.choices.length > 0) {
+            // 兼容OpenAI格式
+            const aiResponse = data.choices[0].message.content;
+            addMessage(aiResponse, 'bot');
+          } else if (data.content) {
+            // 直接包含content字段
+            addMessage(data.content, 'bot');
+          } else {
+            console.log('Coze API响应:', data);
+            addMessage('抱歉，我暂时无法回答这个问题。请稍后再试。', 'bot');
+          }
+
+        } catch (error) {
+          console.error('AI助手错误详情:', {
+            error: error.message,
+            name: error.name,
+            stack: error.stack
+          });
+          
+          // 移除加载状态
+          loadingMessage.remove();
+          
+          // 显示详细的错误消息
+          let errorMessage = '抱歉，网络连接出现问题。请检查网络连接后重试。';
+          
+          if (error.message.includes('Failed to fetch')) {
+            errorMessage = '网络连接失败，请检查网络连接或API服务状态。';
+          } else if (error.message.includes('401') || error.message.includes('403')) {
+            errorMessage = 'API认证失败，请检查API Token是否正确。';
+          } else if (error.message.includes('404')) {
+            errorMessage = 'API接口不存在，请检查API地址是否正确。';
+          } else if (error.message.includes('429')) {
+            errorMessage = '请求过于频繁，请稍后再试。';
+          } else if (error.message.includes('500')) {
+            errorMessage = '服务器内部错误，请稍后再试。';
+          }
+          
+          addMessage(errorMessage, 'bot');
+        }
+
+        aiSendBtn.disabled = false;
       }
 
-      // 添加消息到聊天框
-      function addMessage(content, sender) {
+      // 添加消息到聊天窗口
+      function addMessage(content, sender, isLoading = false) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `ai-message ai-${sender}`;
+        
+        if (isLoading) {
+          messageDiv.classList.add('loading');
+        }
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
@@ -360,69 +1086,12 @@
         
         // 滚动到底部
         aiMessages.scrollTop = aiMessages.scrollHeight;
-      }
-
-      // 生成AI回复
-      function generateAIResponse(userMessage) {
-        const lowerMessage = userMessage.toLowerCase();
         
-        // 音乐推荐相关
-        if (lowerMessage.includes('推荐') || lowerMessage.includes('推荐歌曲')) {
-          const genres = ['流行', '摇滚', '电子', '民谣', 'R&B'];
-          const randomGenre = genres[Math.floor(Math.random() * genres.length)];
-          return `根据你的喜好，我推荐一些${randomGenre}音乐：
-1. 热门${randomGenre}歌曲
-2. 经典${randomGenre}金曲
-3. 最新${randomGenre}发布
-你可以在首页的推荐区域找到更多精彩内容！`;
-        }
-        
-        // 歌词查询
-        if (lowerMessage.includes('歌词') || lowerMessage.includes('歌词查询')) {
-          return `要查询歌词，你可以：
-1. 在搜索框输入歌曲名
-2. 点击歌曲进入播放页面查看完整歌词
-3. 歌词会随着音乐播放实时高亮显示`;
-        }
-        
-        // 歌手信息
-        if (lowerMessage.includes('歌手') || lowerMessage.includes('艺人')) {
-          return `你可以通过以下方式了解歌手信息：
-1. 点击导航栏的"歌手"查看所有歌手
-2. 搜索特定歌手名
-3. 查看歌手的专辑和热门歌曲`;
-        }
-        
-        // 专辑信息
-        if (lowerMessage.includes('专辑')) {
-          return `专辑功能说明：
-1. 在"专辑"页面浏览所有专辑
-2. 点击专辑查看包含的歌曲
-3. 支持按风格、年代筛选专辑`;
-        }
-        
-        // 播放列表
-        if (lowerMessage.includes('歌单') || lowerMessage.includes('播放列表')) {
-          return `歌单管理功能：
-1. 创建个人歌单
-2. 导入本地音乐文件
-3. 收藏喜欢的歌曲到"我的收藏"
-4. 在"我的音乐"中管理所有歌单`;
-        }
-        
-        // 默认回复
-        const defaultResponses = [
-          '我主要专注于音乐相关的帮助，比如歌曲推荐、歌词查询、歌手信息等。',
-          '你可以问我关于音乐推荐、歌词查找、歌手信息等问题。',
-          '作为音乐助手，我擅长帮你发现好音乐、了解音乐知识。',
-          '试试问我："推荐一些流行歌曲" 或 "如何查找歌词？"'
-        ];
-        
-        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        return messageDiv;
       }
 
       // 事件监听
-      aiSend.addEventListener('click', sendMessage);
+      aiSendBtn.addEventListener('click', sendMessage);
       
       aiInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -430,13 +1099,14 @@
         }
       });
 
-      aiInput.addEventListener('input', () => {
-        aiSend.disabled = !aiInput.value.trim();
-      });
+      // 输入框自动聚焦
+      aiInput.focus();
 
-      // 初始禁用发送按钮
-      aiSend.disabled = true;
-    });
+      // 输入框内容变化时启用/禁用发送按钮
+      aiInput.addEventListener('input', () => {
+        aiSendBtn.disabled = !aiInput.value.trim();
+      });
+    }
   </script>
 </body>
 </html>

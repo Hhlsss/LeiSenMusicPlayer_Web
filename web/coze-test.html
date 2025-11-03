@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coze API 测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>Coze API 连接测试</h1>
+    <div id="results"></div>
+    
+    <script>
+        const COZE_API_TOKEN = 'pat_1mZRTEMafM2v3ZjLZa2ioCoNRBp86Dh3bKl3X4667qtYgB0FLbOVW90fdkppYsaq';
+        const BOT_ID = '7567959568312369215';
+        
+        const testEndpoints = [
+            {
+                name: 'Coze API v1',
+                url: 'https://api.coze.cn/v1/chat/completions',
+                body: {
+                    bot_id: BOT_ID,
+                    user: 'test_user',
+                    query: '你好',
+                    stream: false
+                }
+            },
+            {
+                name: 'Coze API v2',
+                url: 'https://api.coze.cn/open_api/v2/chat',
+                body: {
+                    bot_id: BOT_ID,
+                    user: 'test_user',
+                    query: '你好',
+                    stream: false
+                }
+            },
+            {
+                name: 'OpenAI 兼容格式',
+                url: 'https://api.coze.cn/v1/chat/completions',
+                body: {
+                    model: 'coze',
+                    messages: [
+                        { role: 'user', content: '你好' }
+                    ],
+                    max_tokens: 100
+                }
+            }
+        ];
+
+        async function testEndpoint(endpoint) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-result info';
+            resultDiv.innerHTML = `<strong>${endpoint.name}</strong> - 测试中...`;
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                const response = await fetch(endpoint.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${COZE_API_TOKEN}`
+                    },
+                    body: JSON.stringify(endpoint.body)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = `
+                        <strong>${endpoint.name}</strong> - 连接成功！<br>
+                        状态码: ${response.status}<br>
+                        响应格式: ${JSON.stringify(data, null, 2)}
+                    `;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.innerHTML = `
+                        <strong>${endpoint.name}</strong> - 连接失败<br>
+                        状态码: ${response.status}<br>
+                        错误信息: ${data.error || response.statusText}
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = `
+                    <strong>${endpoint.name}</strong> - 网络错误<br>
+                    错误信息: ${error.message}
+                `;
+            }
+        }
+
+        // 运行所有测试
+        testEndpoints.forEach(testEndpoint);
+    </script>
+</body>
+</html>

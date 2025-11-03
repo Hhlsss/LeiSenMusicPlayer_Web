@@ -15,60 +15,81 @@ func main() {
 		log.Println("继续运行，但用户认证功能将不可用")
 	}
 
+	// 创建自定义多路复用器
+	mux := http.NewServeMux()
+
 	// 静态资源：/static/* 映射到 ./web 目录
 	fs := http.FileServer(http.Dir("web"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// 页面路由
-	http.HandleFunc("/", controller.HandleIndex)
-	http.HandleFunc("/song", controller.HandleSong)
-	http.HandleFunc("/artists", controller.HandleArtists)
-	http.HandleFunc("/albums", controller.HandleAlbumsPage)
-	http.HandleFunc("/album", controller.HandleAlbumPage)
-	http.HandleFunc("/artist/", controller.HandleArtistPage)
-	http.HandleFunc("/favorites", controller.HandleFavoritesPage)
-	http.HandleFunc("/profile", controller.HandleProfilePage)
-	http.HandleFunc("/upload", controller.HandleUploadPage)
+	mux.HandleFunc("/", controller.HandleIndex)
+	mux.HandleFunc("/login", controller.HandleLoginPage)
+	mux.HandleFunc("/song", controller.HandleSong)
+	mux.HandleFunc("/artists", controller.HandleArtists)
+	mux.HandleFunc("/albums", controller.HandleAlbumsPage)
+	mux.HandleFunc("/album", controller.HandleAlbumPage)
+	mux.HandleFunc("/artist/", controller.HandleArtistPage)
+	mux.HandleFunc("/favorites", controller.HandleFavoritesPage)
+	mux.HandleFunc("/profile", controller.HandleProfilePage)
+	mux.HandleFunc("/upload", controller.HandleUploadPage)
+	mux.HandleFunc("/forum", controller.HandleForumPage)
+	mux.HandleFunc("/forum/post/", controller.HandleForumPostPage)
+	mux.HandleFunc("/playlists", controller.HandlePlaylistsPage)
+	mux.HandleFunc("/requirements", controller.HandleRequirementsPage)
 
 	// API 路由
-	http.HandleFunc("/api/register", controller.HandleRegister)
-	http.HandleFunc("/api/login", controller.HandleLogin)
-	http.HandleFunc("/api/logout", controller.HandleLogout)
+	mux.HandleFunc("/api/register", controller.HandleRegister)
+	mux.HandleFunc("/api/login", controller.HandleLogin)
+	mux.HandleFunc("/api/logout", controller.HandleLogout)
 
 	// 音乐数据 API
-	http.HandleFunc("/api/music", controller.HandleMusicList)
-	http.HandleFunc("/api/artists", controller.HandleArtistsAPI)
-	http.HandleFunc("/api/albums", controller.HandleAlbums)
-	http.HandleFunc("/api/album_tracks", controller.HandleAlbumTracks)
-	http.HandleFunc("/api/audio", controller.HandleAudio)
-	http.HandleFunc("/api/cover", controller.HandleCover)
-	http.HandleFunc("/api/lyrics", controller.HandleLyrics)
-	http.HandleFunc("/api/lyrics_raw", controller.HandleLyricsRaw)
-	http.HandleFunc("/api/track", controller.HandleTrack)
-	http.HandleFunc("/api/artist_detail/", controller.HandleArtistDetail)
-	http.HandleFunc("/api/artist_tracks/", controller.HandleArtistTracks)
-	http.HandleFunc("/api/get_music_dir", controller.HandleGetMusicDir)
-	http.HandleFunc("/api/update_music_dir", controller.HandleUpdateMusicDir)
+	mux.HandleFunc("/api/music", controller.HandleMusicList)
+	mux.HandleFunc("/api/artists", controller.HandleArtistsAPI)
+	mux.HandleFunc("/api/albums", controller.HandleAlbums)
+	mux.HandleFunc("/api/album_tracks", controller.HandleAlbumTracks)
+	mux.HandleFunc("/api/audio", controller.HandleAudio)
+	mux.HandleFunc("/api/cover", controller.HandleCover)
+	mux.HandleFunc("/api/lyrics", controller.HandleLyrics)
+	mux.HandleFunc("/api/lyrics_raw", controller.HandleLyricsRaw)
+	mux.HandleFunc("/api/track", controller.HandleTrack)
+	mux.HandleFunc("/api/artist_detail/", controller.HandleArtistDetail)
+	mux.HandleFunc("/api/artist_tracks/", controller.HandleArtistTracks)
+	mux.HandleFunc("/api/get_music_dir", controller.HandleGetMusicDir)
+	mux.HandleFunc("/api/update_music_dir", controller.HandleUpdateMusicDir)
 
 	// 评论功能 API
-	http.HandleFunc("/api/comments", controller.HandleComments)
-	http.HandleFunc("/api/check_auth", controller.HandleCheckAuth)
+	mux.HandleFunc("/api/comments", controller.HandleComments)
+	mux.HandleFunc("/api/check_auth", controller.HandleCheckAuth)
 
 	// 收藏功能 API
-	http.HandleFunc("/api/favorites", controller.HandleFavorites)
-	http.HandleFunc("/api/favorites/", controller.HandleFavoriteItem)
-	http.HandleFunc("/api/favorites/check", controller.HandleCheckFavorite)
+	mux.HandleFunc("/api/favorites", controller.HandleFavorites)
+	mux.HandleFunc("/api/favorites/", controller.HandleFavoriteItem)
+	mux.HandleFunc("/api/favorites/check", controller.HandleCheckFavorite)
 
 	// 歌曲信息 API
-	http.HandleFunc("/api/song_info", controller.HandleSongInfo)
-	http.HandleFunc("/api/update_profile", controller.HandleUpdateProfile)
+	mux.HandleFunc("/api/song_info", controller.HandleSongInfo)
+	mux.HandleFunc("/api/update_profile", controller.HandleUpdateProfile)
 
 	// 音乐上传功能 API
-	http.HandleFunc("/api/upload/music", controller.HandleUploadMusic)
-	http.HandleFunc("/api/upload/status", controller.HandleUploadStatus)
+	mux.HandleFunc("/api/upload/music", controller.HandleUploadMusic)
+	mux.HandleFunc("/api/upload/status", controller.HandleUploadStatus)
+	mux.HandleFunc("/api/upload/play", controller.HandlePlayUploadedMusic)
+	mux.HandleFunc("/api/cloud/music", controller.HandleCloudMusicList)
+	mux.HandleFunc("/api/cloud/stream", controller.HandleCloudMusicStream)
+
+	// 论坛功能 API
+	mux.HandleFunc("/api/forum/posts", controller.HandleForumPosts)
+	mux.HandleFunc("/api/forum/post/", controller.HandleForumPost)
+	mux.HandleFunc("/api/forum/replies", controller.HandleForumReplies)
+	mux.HandleFunc("/api/forum/reply/", controller.HandleForumReply)
+	mux.HandleFunc("/api/forum/stats", controller.HandleForumStats)
+	mux.HandleFunc("/api/forum/my-posts", controller.HandleMyPosts)
+
+
 
 	log.Println("Server started at http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
 	}
 }

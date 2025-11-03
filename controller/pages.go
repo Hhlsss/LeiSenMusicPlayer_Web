@@ -44,3 +44,18 @@ func HandleFavoritesPage(w http.ResponseWriter, r *http.Request) {
 func HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join("web", "profile.html"))
 }
+
+// HandleLoginPage 登录页面：GET /login
+func HandleLoginPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "login.html"))
+}
+
+// HandlePlaylistsPage 歌单页面：GET /playlists
+func HandlePlaylistsPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "playlists.html"))
+}
+
+// HandleRequirementsPage 需求文档页面：GET /requirements
+func HandleRequirementsPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "requirements.html"))
+}

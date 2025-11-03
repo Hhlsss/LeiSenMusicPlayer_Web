@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -173,6 +174,92 @@ func HandlePlayUploadedMusic(w http.ResponseWriter, r *http.Request) {
 
 	// 重定向到音乐文件URL
 	http.Redirect(w, r, musicURL, http.StatusFound)
+}
+
+// HandleCloudMusicList 获取云端音乐列表（包含本地和云端音乐）
+func HandleCloudMusicList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErrUpload(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	// 检查用户是否已登录
+	userID, err := service.GetCurrentUserID(r)
+	var cloudMusic []service.MusicFile
+	
+	if err == nil {
+		// 用户已登录，获取用户上传的云端音乐
+		cloudMusic, err = service.GetUserMusicFiles(userID)
+		if err != nil {
+			// 获取云端音乐失败，但继续返回本地音乐
+			cloudMusic = []service.MusicFile{}
+		}
+	} else {
+		// 用户未登录，返回空云端音乐列表
+		cloudMusic = []service.MusicFile{}
+	}
+
+	// 获取本地音乐（如果存在）
+	localMusic, err := service.GetLocalMusicFiles()
+	if err != nil {
+		// 本地音乐获取失败不影响整体功能
+		localMusic = []service.MusicFile{}
+	}
+
+	// 合并音乐列表
+	allMusic := append(cloudMusic, localMusic...)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"cloud_music": cloudMusic,
+		"local_music": localMusic,
+		"total_count": len(allMusic),
+	})
+}
+
+// HandleCloudMusicStream 流式播放云端音乐
+func HandleCloudMusicStream(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErrUpload(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	// 从URL参数中获取音乐文件ID
+	musicFileID := r.URL.Query().Get("id")
+	if musicFileID == "" {
+		writeErrUpload(w, http.StatusBadRequest, "music file id required")
+		return
+	}
+
+	// 检查用户是否已登录
+	userID, err := service.GetCurrentUserID(r)
+	if err != nil {
+		writeErrUpload(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	// 获取音乐文件信息
+	musicFile, err := service.GetMusicFileByID(musicFileID, userID)
+	if err != nil {
+		writeErrUpload(w, http.StatusNotFound, "music file not found")
+		return
+	}
+
+	// 设置流媒体响应头
+	w.Header().Set("Content-Type", "audio/mpeg")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", musicFile.FileSize))
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+
+	// 处理范围请求（支持断点续传）
+	rangeHeader := r.Header.Get("Range")
+	if rangeHeader != "" {
+		service.HandleRangeRequest(w, r, musicFile)
+		return
+	}
+
+	// 直接返回音乐文件URL
+	http.Redirect(w, r, service.GetMusicFileURL(musicFile.StoragePath), http.StatusFound)
 }
 
 // isValidMusicFileType 检查文件类型是否为有效的音乐文件

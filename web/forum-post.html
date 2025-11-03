@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帖子详情 - 音乐论坛</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .post-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .post-detail {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .post-header {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 10px 0;
+            line-height: 1.3;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .post-author {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .post-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .post-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #444;
+            margin-bottom: 30px;
+            white-space: pre-wrap;
+        }
+
+        .post-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 20px;
+        }
+
+        .action-btn {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #e9ecef;
+        }
+
+        .action-btn.delete {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .action-btn.delete:hover {
+            background: #c82333;
+        }
+
+        .replies-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .replies-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .reply-form {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .reply-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .reply-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .reply-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .reply-author {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .reply-time {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .reply-content {
+            color: #555;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .reply-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .reply-action {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .reply-action:hover {
+            background: #f0f0f0;
+        }
+
+        .reply-action.delete {
+            color: #dc3545;
+        }
+
+        .reply-action.delete:hover {
+            background: #ffe6e6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .edit-form.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .post-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .post-stats {
+                gap: 15px;
+            }
+
+            .post-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="logo">雷森音乐</div>
+        <nav class="nav">
+            <a href="/">我的音乐</a>
+            <a href="/artists">歌手</a>
+            <a href="/albums">专辑</a>
+            <a href="/favorites">我的收藏</a>
+            <a href="/upload">上传</a>
+            <a href="/forum">音乐论坛</a>
+            <a href="/profile">个人中心</a>
+        </nav>
+        <div class="search">
+            <input type="text" placeholder="搜索歌曲/歌手/专辑" />
+        </div>
+        <div class="user-actions">
+            <button class="primary">创建歌单</button>
+            <button id="logoutBtn" class="hidden">退出</button>
+            <span id="userNickname" class="hidden nickname"></span>
+        </div>
+    </header>
+
+        <!-- 帖子详情内容 -->
+        <div class="post-container">
+            <button class="back-btn" onclick="goBack()">← 返回论坛</button>
+
+            <!-- 帖子详情 -->
+            <div class="post-detail" id="post-detail">
+                <div class="loading">
+                    <p>正在加载帖子...</p>
+                </div>
+            </div>
+
+            <!-- 回复区域 -->
+            <div class="replies-section">
+                <h3 class="replies-header">💬 回复</h3>
+
+                <!-- 回复表单 -->
+                <div class="reply-form" id="reply-form">
+                    <form id="new-reply-form">
+                        <div class="form-group">
+                            <label for="reply-content">发表回复</label>
+                            <textarea id="reply-content" class="form-control" placeholder="写下你的想法..." required></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">发表回复</button>
+                    </form>
+                </div>
+
+                <!-- 回复列表 -->
+                <div id="replies-list">
+                    <div class="loading">
+                        <p>正在加载回复...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/app.js"></script>
+    <script>
+        let currentPostId = '';
+        let currentUserId = '';
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            loadPostDetail();
+            loadReplies();
+        });
+
+        // 检查登录状态
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/check_auth');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    document.getElementById('login-link').style.display = 'none';
+                    document.getElementById('logout-link').style.display = 'block';
+                    document.getElementById('profile-link').style.display = 'block';
+                    currentUserId = data.user_id || '';
+                } else {
+                    document.getElementById('reply-form').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+            }
+        }
+
+        // 返回论坛
+        function goBack() {
+            window.history.back();
+        }
+
+        // 加载帖子详情
+        async function loadPostDetail() {
+            try {
+                const pathParts = window.location.pathname.split('/');
+                currentPostId = pathParts[pathParts.length - 1];
+
+                if (!currentPostId) {
+                    throw new Error('无效的帖子ID');
+                }
+
+                const response = await fetch(`/api/forum/post/${currentPostId}`);
+                
+                if (!response.ok) {
+                    throw new Error('帖子不存在');
+                }
+
+                const post = await response.json();
+                displayPostDetail(post);
+            } catch (error) {
+                console.error('加载帖子详情失败:', error);
+                document.getElementById('post-detail').innerHTML = `
+                    <div class="empty-state">
+                        <h3>帖子不存在</h3>
+                        <p>该帖子可能已被删除或不存在</p>
+                        <button class="back-btn" onclick="goBack()">返回论坛</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 显示帖子详情
+        function displayPostDetail(post) {
+            const postDetail = document.getElementById('post-detail');
+            
+            postDetail.innerHTML = `
+                <div class="post-header">
+                    <h1 class="post-title">${escapeHtml(post.title)}</h1>
+                    <div class="post-meta">
+                        <div>
+                            <span class="post-author">${escapeHtml(post.user_nickname)}</span>
+                            <span> 发布于 ${formatDate(post.created_at)}</span>
+                            ${post.updated_at !== post.created_at ? `<span>（最后编辑于 ${formatDate(post.updated_at)}）</span>` : ''}
+                        </div>
+                        <div class="post-stats">
+                            <span>👁️ ${post.view_count || 0}</span>
+                            <span>💬 ${post.reply_count || 0}</span>
+                            ${post.is_pinned ? '<span style="color: #ff6b6b;">📌 置顶</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="post-tags">
+                    ${(post.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                </div>
+                
+                <div class="post-content">${escapeHtml(post.content)}</div>
+                
+                <div class="post-actions" id="post-actions">
+                    <!-- 操作按钮将通过JavaScript动态生成 -->
+                </div>
+            `;
+
+            // 检查是否有权限编辑帖子
+            setupPostActions(post);
+        }
+
+        // 设置帖子操作按钮
+        function setupPostActions(post) {
+            const actionsContainer = document.getElementById('post-actions');
+            
+            // 检查当前用户是否是帖子作者
+            const canEdit = currentUserId && post.user_id === currentUserId;
+            
+            if (canEdit) {
+                actionsContainer.innerHTML = `
+                    <button class="action-btn" onclick="editPost()">编辑</button>
+                    <button class="action-btn delete" onclick="deletePost()">删除</button>
+                `;
+            } else {
+                actionsContainer.innerHTML = '';
+            }
+        }
+
+        // 编辑帖子
+        function editPost() {
+            const postContent = document.querySelector('.post-content');
+            const currentContent = postContent.textContent;
+            
+            postContent.innerHTML = `
+                <textarea id="edit-content" class="form-control" style="min-height: 200px;">${currentContent}</textarea>
+                <div style="margin-top: 10px;">
+                    <button class="submit-btn" onclick="savePostEdit()">保存</button>
+                    <button class="back-btn" onclick="cancelPostEdit()">取消</button>
+                </div>
+            `;
+        }
+
+        // 保存帖子编辑
+        async function savePostEdit() {
+            const newContent = document.getElementById('edit-content').value;
+            
+            if (!newContent.trim()) {
+                alert('内容不能为空');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/forum/post/${currentPostId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: newContent
+                    })
+                });
+
+                if (response.ok) {
+                    alert('帖子更新成功');
+                    loadPostDetail(); // 重新加载帖子详情
+                } else {
+                    const error = await response.json();
+                    alert('更新失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('更新帖子失败:', error);
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 取消帖子编辑
+        function cancelPostEdit() {
+            loadPostDetail(); // 重新加载帖子详情
+        }
+
+        // 删除帖子
+        async function deletePost() {
+            if (!confirm('确定要删除这个帖子吗？此操作不可恢复。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/forum/post/${currentPostId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('帖子删除成功');
+                    window.location.href = '/forum';
+                } else {
+                    const error = await response.json();
+                    alert('删除失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('删除帖子失败:', error);
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 加载回复
+        async function loadReplies() {
+            try {
+                const response = await fetch(`/api/forum/replies?post_id=${currentPostId}`);
+                const replies = await response.json();
+                
+                displayReplies(replies);
+            } catch (error) {
+                console.error('加载回复失败:', error);
+                document.getElementById('replies-list').innerHTML = `
+                    <div class="empty-state">
+                        <h3>加载失败</h3>
+                        <p>请检查网络连接后重试</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 显示回复列表
+        function displayReplies(replies) {
+            const repliesList = document.getElementById('replies-list');
+            
+            if (!replies || replies.length === 0) {
+                repliesList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>暂无回复</h3>
+                        <p>成为第一个回复的人吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            repliesList.innerHTML = replies.map(reply => `
+                <div class="reply-item" id="reply-${reply.id}">
+                    <div class="reply-header">
+                        <span class="reply-author">${escapeHtml(reply.user_nickname)}</span>
+                        <span class="reply-time">${formatDate(reply.created_at)}</span>
+                    </div>
+                    <div class="reply-content">${escapeHtml(reply.content)}</div>
+                    <div class="reply-actions" id="reply-actions-${reply.id}">
+                        <!-- 回复操作按钮将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            `).join('');
+
+            // 为每个回复设置操作按钮
+            replies.forEach(reply => {
+                setupReplyActions(reply);
+            });
+        }
+
+        // 设置回复操作按钮
+        function setupReplyActions(reply) {
+            const actionsContainer = document.getElementById(`reply-actions-${reply.id}`);
+            
+            // 检查当前用户是否是回复作者
+            const canEdit = currentUserId && reply.user_id === currentUserId;
+            
+            if (canEdit) {
+                actionsContainer.innerHTML = `
+                    <button class="reply-action" onclick="editReply('${reply.id}')">编辑</button>
+                    <button class="reply-action delete" onclick="deleteReply('${reply.id}')">删除</button>
+                `;
+            } else {
+                actionsContainer.innerHTML = '';
+            }
+        }
+
+        // 编辑回复
+        function editReply(replyId) {
+            const replyElement = document.getElementById(`reply-${replyId}`);
+            const replyContent = replyElement.querySelector('.reply-content');
+            const currentContent = replyContent.textContent;
+            
+            replyContent.innerHTML = `
+                <textarea id="edit-reply-content-${replyId}" class="form-control">${currentContent}</textarea>
+                <div style="margin-top: 10px;">
+                    <button class="submit-btn" onclick="saveReplyEdit('${replyId}')">保存</button>
+                    <button class="back-btn" onclick="cancelReplyEdit('${replyId}')">取消</button>
+                </div>
+            `;
+        }
+
+        // 保存回复编辑
+        async function saveReplyEdit(replyId) {
+            const newContent = document.getElementById(`edit-reply-content-${replyId}`).value;
+            
+            if (!newContent.trim()) {
+                alert('内容不能为空');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/forum/reply/${replyId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: newContent
+                    })
+                });
+
+                if (response.ok) {
+                    alert('回复更新成功');
+                    loadReplies(); // 重新加载回复
+                } else {
+                    const error = await response.json();
+                    alert('更新失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('更新回复失败:', error);
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 取消回复编辑
+        function cancelReplyEdit(replyId) {
+            loadReplies(); // 重新加载回复
+        }
+
+        // 删除回复
+        async function deleteReply(replyId) {
+            if (!confirm('确定要删除这个回复吗？此操作不可恢复。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/forum/reply/${replyId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('回复删除成功');
+                    loadReplies(); // 重新加载回复
+                } else {
+                    const error = await response.json();
+                    alert('删除失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('删除回复失败:', error);
+                alert('网络错误，请重试');
+            }
+        }
+
+        // 发表新回复
+        document.getElementById('new-reply-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const content = document.getElementById('reply-content').value;
+            
+            if (!content.trim()) {
+                alert('回复内容不能为空');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/forum/replies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        post_id: currentPostId,
+                        content: content
+                    })
+                });
+
+                if (response.ok) {
+                    alert('回复发表成功！');
+                    document.getElementById('reply-content').value = '';
+                    loadReplies(); // 重新加载回复列表
+                } else {
+                    const error = await response.json();
+                    alert('发表失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('发表回复失败:', error);
+                alert('网络错误，请重试');
+            }
+        });
+
+        // 工具函数：转义HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 工具函数：格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+    </script>
+</body>
+</html>

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -568,7 +567,7 @@ func GetSongComments(songID int) ([]Comment, error) {
 }
 
 // AddComment 添加评论
-func AddComment(songID int, userID int, content string) (*Comment, error) {
+func AddComment(songID int, userUUID string, content string) (*Comment, error) {
 	// 初始化数据库连接
 	if err := db.Init(); err != nil {
 		return nil, fmt.Errorf("数据库连接失败: %v", err)
@@ -580,7 +579,7 @@ func AddComment(songID int, userID int, content string) (*Comment, error) {
 
 	// 获取用户真实昵称
 	userNickname := "用户" // 默认昵称
-	if userInfo, err := GetUserInfo(userID); err == nil {
+	if userInfo, err := GetUserInfo(userUUID); err == nil {
 		if nickname, ok := userInfo["nickname"].(string); ok && nickname != "" {
 			userNickname = nickname
 		}
@@ -642,31 +641,27 @@ func AddComment(songID int, userID int, content string) (*Comment, error) {
 }
 
 // GetCurrentUserID 获取当前用户ID
-func GetCurrentUserID(r *http.Request) (int, error) {
-	// 从cookie中获取用户ID
+func GetCurrentUserID(r *http.Request) (string, error) {
+	// 从cookie中获取用户UUID
 	cookie, err := r.Cookie("user_id")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	
-	userID, err := strconv.Atoi(cookie.Value)
-	if err != nil {
-		return 0, err
-	}
-	
-	return userID, nil
+	// 现在直接返回UUID字符串，不再转换为整数
+	return cookie.Value, nil
 }
 
 // GetUserInfo 获取用户信息
-func GetUserInfo(userID int) (map[string]interface{}, error) {
-	// 从数据库获取用户信息
-	userInfo, err := db.GetUserProfile(userID)
+func GetUserInfo(userUUID string) (map[string]interface{}, error) {
+	// 从数据库获取用户信息（使用UUID格式）
+	userInfo, err := db.GetUserProfileByUUID(userUUID)
 	if err != nil {
 		// 如果获取失败，返回默认信息
 		return map[string]interface{}{
-			"id":       userID,
+			"id":       userUUID,
 			"nickname": "用户",
-			"email":    "user" + strconv.Itoa(userID) + "@example.com",
+			"email":    "user@example.com",
 		}, nil
 	}
 	return userInfo, nil
@@ -763,7 +758,7 @@ func ListAlbumTracksByID(id int) ([]Track, error) {
 // UserFavorite 用户收藏结构体
 type UserFavorite struct {
 	ID         int64  `json:"id"`
-	UserID     int    `json:"user_id"`
+	UserID     string `json:"user_id"`
 	SongID     string `json:"song_id"`
 	SongTitle  string `json:"song_title"`
 	SongArtist string `json:"song_artist"`
@@ -772,7 +767,7 @@ type UserFavorite struct {
 }
 
 // GetUserFavorites 获取用户收藏列表
-func GetUserFavorites(userID int) ([]UserFavorite, error) {
+func GetUserFavorites(userUUID string) ([]UserFavorite, error) {
 	// 初始化数据库连接
 	if err := db.Init(); err != nil {
 		return nil, fmt.Errorf("数据库连接失败: %v", err)
@@ -780,8 +775,8 @@ func GetUserFavorites(userID int) ([]UserFavorite, error) {
 
 	// 使用 HTTP 客户端直接调用 Supabase REST API
 	httpClient := &http.Client{}
-	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%d&select=*&order=created_at.desc",
-		os.Getenv("SUPABASE_URL"), userID)
+	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%s&select=*&order=created_at.desc",
+		os.Getenv("SUPABASE_URL"), userUUID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -816,7 +811,7 @@ func GetUserFavorites(userID int) ([]UserFavorite, error) {
 	for _, item := range result {
 		favorite := UserFavorite{
 			ID:         parseID(item["id"]),
-			UserID:     userID,
+			UserID:     userUUID,
 			SongID:     getStringFromMap(item, "song_id", ""),
 			SongTitle:  getStringFromMap(item, "song_title", ""),
 			SongArtist: getStringFromMap(item, "song_artist", ""),
@@ -830,7 +825,7 @@ func GetUserFavorites(userID int) ([]UserFavorite, error) {
 }
 
 // AddUserFavorite 添加用户收藏
-func AddUserFavorite(userID int, songID, songTitle, songArtist, songAlbum string) error {
+func AddUserFavorite(userUUID string, songID, songTitle, songArtist, songAlbum string) error {
 	// 初始化数据库连接
 	if err := db.Init(); err != nil {
 		return fmt.Errorf("数据库连接失败: %v", err)
@@ -842,7 +837,7 @@ func AddUserFavorite(userID int, songID, songTitle, songArtist, songAlbum string
 
 	// 准备插入数据
 	insertData := map[string]interface{}{
-		"user_id":     userID,
+		"user_id":     userUUID,
 		"song_id":     songID,
 		"song_title":  songTitle,
 		"song_artist": songArtist,
@@ -880,7 +875,7 @@ func AddUserFavorite(userID int, songID, songTitle, songArtist, songAlbum string
 				return nil
 			}
 			// 重新尝试插入数据
-			return AddUserFavorite(userID, songID, songTitle, songArtist, songAlbum)
+			return AddUserFavorite(userUUID, songID, songTitle, songArtist, songAlbum)
 		}
 
 		// 读取响应体获取详细错误信息
@@ -892,7 +887,7 @@ func AddUserFavorite(userID int, songID, songTitle, songArtist, songAlbum string
 }
 
 // DeleteUserFavorite 删除用户收藏
-func DeleteUserFavorite(userID int, songID string) error {
+func DeleteUserFavorite(userUUID string, songID string) error {
 	// 初始化数据库连接
 	if err := db.Init(); err != nil {
 		return fmt.Errorf("数据库连接失败: %v", err)
@@ -900,8 +895,8 @@ func DeleteUserFavorite(userID int, songID string) error {
 
 	// 使用 HTTP 客户端直接调用 Supabase REST API
 	httpClient := &http.Client{}
-	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%d&song_id=eq.%s",
-		os.Getenv("SUPABASE_URL"), userID, songID)
+	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%s&song_id=eq.%s",
+		os.Getenv("SUPABASE_URL"), userUUID, songID)
 
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -929,7 +924,7 @@ func DeleteUserFavorite(userID int, songID string) error {
 }
 
 // CheckUserFavorite 检查歌曲是否已收藏
-func CheckUserFavorite(userID int, songID string) (bool, error) {
+func CheckUserFavorite(userUUID string, songID string) (bool, error) {
 	// 初始化数据库连接
 	if err := db.Init(); err != nil {
 		return false, fmt.Errorf("数据库连接失败: %v", err)
@@ -937,8 +932,8 @@ func CheckUserFavorite(userID int, songID string) (bool, error) {
 
 	// 使用 HTTP 客户端直接调用 Supabase REST API
 	httpClient := &http.Client{}
-	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%d&song_id=eq.%s&select=id",
-		os.Getenv("SUPABASE_URL"), userID, songID)
+	url := fmt.Sprintf("%s/rest/v1/user_favorites?user_id=eq.%s&song_id=eq.%s&select=id",
+		os.Getenv("SUPABASE_URL"), userUUID, songID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

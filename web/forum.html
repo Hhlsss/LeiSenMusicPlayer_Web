@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐论坛 - 雷森音乐</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .forum-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .forum-title {
+            font-size: 2.5rem;
+            color: #333;
+            margin: 0;
+        }
+
+        .new-post-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .new-post-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .forum-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+
+        .posts-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .post-form {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .post-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .post-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .post-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .post-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            margin-bottom: 10px;
+        }
+
+        .post-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .post-content {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 15px;
+        }
+
+        .post-stats {
+            display: flex;
+            gap: 20px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .post-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: #f5f5f5;
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag-cloud .tag {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tag-cloud .tag:hover {
+            background: #1976d2;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+
+        .stats-label {
+            color: #666;
+        }
+
+        .stats-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .forum-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .forum-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <div class="topbar">
+            <div class="logo">雷森音乐</div>
+            <div class="nav">
+                <a href="/">我的音乐</a>
+                <a href="/artists">歌手</a>
+                <a href="/albums">专辑</a>
+                <a href="/favorites">我的收藏</a>
+                <a href="/upload">上传</a>
+                <a href="/forum" class="active">音乐论坛</a>
+                <a href="/profile">个人中心</a>
+            </div>
+            <div class="search">
+                <input type="text" placeholder="搜索音乐..." id="search-input">
+            </div>
+            <div class="user-actions">
+                <button id="login-link" onclick="window.location.href='/login'">登录</button>
+            </div>
+        </div>
+
+        <!-- 论坛主内容 -->
+        <div class="forum-container">
+            <div class="forum-header">
+                <h1 class="forum-title">🎵 音乐论坛</h1>
+                <button class="new-post-btn" onclick="togglePostForm()">发表新帖</button>
+            </div>
+
+            <div class="forum-content">
+                <!-- 帖子列表区域 -->
+                <div class="posts-section">
+                    <!-- 发帖表单 -->
+                    <div class="post-form" id="post-form">
+                        <h3>发表新帖</h3>
+                        <form id="new-post-form">
+                            <div class="form-group">
+                                <label for="post-title">标题</label>
+                                <input type="text" id="post-title" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="post-content">内容</label>
+                                <textarea id="post-content" class="form-control" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="post-tags">标签（用逗号分隔）</label>
+                                <input type="text" id="post-tags" class="form-control" placeholder="例如：流行,摇滚,讨论">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="new-post-btn">发布</button>
+                                <button type="button" class="new-post-btn" style="background: #6c757d;" onclick="togglePostForm()">取消</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 帖子列表 -->
+                    <div id="posts-list">
+                        <div class="loading">
+                            <p>正在加载帖子...</p>
+                        </div>
+                    </div>
+
+                    <!-- 分页 -->
+                    <div class="pagination" id="pagination"></div>
+                </div>
+
+                <!-- 侧边栏 -->
+                <div class="sidebar">
+                    <div class="sidebar-section">
+                        <h3 class="sidebar-title">📊 论坛统计</h3>
+                        <div class="stats-item">
+                            <span class="stats-label">总帖子数</span>
+                            <span class="stats-value" id="total-posts">0</span>
+                        </div>
+                        <div class="stats-item">
+                            <span class="stats-label">今日新帖</span>
+                            <span class="stats-value" id="today-posts">0</span>
+                        </div>
+                        <div class="stats-item">
+                            <span class="stats-label">总回复数</span>
+                            <span class="stats-value" id="total-replies">0</span>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3 class="sidebar-title">🏷️ 热门标签</h3>
+                        <div class="tag-cloud" id="tag-cloud">
+                            <!-- 标签将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3 class="sidebar-title">🔥 热门帖子</h3>
+                        <div id="hot-posts">
+                            <!-- 热门帖子将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/app.js"></script>
+    <script>
+        let currentPage = 1;
+        const postsPerPage = 10;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            loadPosts();
+            loadForumStats();
+        });
+
+        // 检查登录状态
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/check_auth');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    document.getElementById('login-link').style.display = 'none';
+                } else {
+                    document.getElementById('new-post-btn').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+            }
+        }
+
+        // 切换发帖表单显示状态
+        function togglePostForm() {
+            const form = document.getElementById('post-form');
+            form.classList.toggle('active');
+        }
+
+        // 加载帖子列表
+        async function loadPosts(page = 1, tag = '') {
+            try {
+                currentPage = page;
+                let url = `/api/forum/posts?page=${page}&limit=${postsPerPage}`;
+                if (tag) {
+                    url += `&tag=${encodeURIComponent(tag)}`;
+                }
+
+                const response = await fetch(url);
+                const posts = await response.json();
+
+                displayPosts(posts);
+                setupPagination(posts.length);
+            } catch (error) {
+                console.error('加载帖子失败:', error);
+                document.getElementById('posts-list').innerHTML = `
+                    <div class="empty-state">
+                        <h3>加载失败</h3>
+                        <p>请检查网络连接后重试</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 显示帖子列表
+        function displayPosts(posts) {
+            const postsList = document.getElementById('posts-list');
+            
+            if (!posts || posts.length === 0) {
+                postsList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>暂无帖子</h3>
+                        <p>成为第一个发表帖子的人吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            postsList.innerHTML = posts.map(post => `
+                <div class="post-item" onclick="viewPost('${post.id}')">
+                    <div class="post-header">
+                        <div>
+                            <h3 class="post-title">${escapeHtml(post.title)}</h3>
+                            <div class="post-meta">
+                                作者：${escapeHtml(post.user_nickname)} | 
+                                发布时间：${formatDate(post.created_at)}
+                            </div>
+                        </div>
+                        ${post.is_pinned ? '<span style="color: #ff6b6b; font-weight: bold;">📌 置顶</span>' : ''}
+                    </div>
+                    <div class="post-content">
+                        ${escapeHtml(post.content.length > 200 ? post.content.substring(0, 200) + '...' : post.content)}
+                    </div>
+                    <div class="post-footer">
+                        <div class="post-stats">
+                            <span>👁️ ${post.view_count || 0}</span>
+                            <span>💬 ${post.reply_count || 0}</span>
+                        </div>
+                        <div class="post-tags">
+                            ${(post.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 设置分页
+        function setupPagination(totalPosts) {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(totalPosts / postsPerPage);
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // 上一页按钮
+            if (currentPage > 1) {
+                paginationHTML += `<button class="page-btn" onclick="loadPosts(${currentPage - 1})">上一页</button>`;
+            }
+
+            // 页码按钮
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="page-btn active">${i}</button>`;
+                } else {
+                    paginationHTML += `<button class="page-btn" onclick="loadPosts(${i})">${i}</button>`;
+                }
+            }
+
+            // 下一页按钮
+            if (currentPage < totalPages) {
+                paginationHTML += `<button class="page-btn" onclick="loadPosts(${currentPage + 1})">下一页</button>`;
+            }
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        // 查看帖子详情
+        function viewPost(postId) {
+            window.location.href = `/forum/post/${postId}`;
+        }
+
+        // 加载论坛统计
+        async function loadForumStats() {
+            try {
+                const response = await fetch('/api/forum/stats');
+                if (!response.ok) {
+                    throw new Error('获取统计信息失败');
+                }
+                const stats = await response.json();
+                
+                // 更新统计信息
+                document.getElementById('total-posts').textContent = stats.total_posts || 0;
+                document.getElementById('today-posts').textContent = stats.today_posts || 0;
+                document.getElementById('total-replies').textContent = stats.total_replies || 0;
+                
+                // 更新标签云
+                updateTagCloud(stats.top_tags || []);
+                
+                // 更新热门帖子
+                updateHotPosts(stats.hot_posts || []);
+                
+            } catch (error) {
+                console.error('加载论坛统计失败:', error);
+                // 使用默认值
+                document.getElementById('total-posts').textContent = '0';
+                document.getElementById('today-posts').textContent = '0';
+                document.getElementById('total-replies').textContent = '0';
+                updateTagCloud([]);
+                updateHotPosts([]);
+            }
+        }
+
+
+
+        // 按标签筛选
+        function filterByTag(tag) {
+            loadPosts(1, tag);
+        }
+
+        // 更新标签云
+        function updateTagCloud(tags) {
+            const tagCloud = document.getElementById('tag-cloud');
+            
+            if (!tags || tags.length === 0) {
+                tagCloud.innerHTML = `
+                    <div style="color: #666; font-size: 0.9rem;">
+                        暂无标签数据
+                    </div>
+                `;
+                return;
+            }
+            
+            // 按出现次数排序
+            tags.sort((a, b) => b.count - a.count);
+            
+            tagCloud.innerHTML = tags.map(tag => 
+                `<span class="tag" onclick="filterByTag('${tag.name}')">${tag.name} (${tag.count})</span>`
+            ).join('');
+        }
+
+        // 更新热门帖子
+        function updateHotPosts(posts) {
+            const hotPostsContainer = document.getElementById('hot-posts');
+            
+            if (!posts || posts.length === 0) {
+                hotPostsContainer.innerHTML = `
+                    <div style="color: #666; font-size: 0.9rem;">
+                        暂无热门帖子
+                    </div>
+                `;
+                return;
+            }
+            
+            hotPostsContainer.innerHTML = posts.map(post => `
+                <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; cursor: pointer;" onclick="viewPost('${post.id}')">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px;">${escapeHtml(post.title)}</div>
+                    <div style="color: #666; font-size: 0.8rem;">
+                        💬 ${post.reply_count || 0} 回复 | 👁️ ${post.view_count || 0} 浏览
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 更新标签云
+        function updateTagCloud(tags) {
+            const tagCloud = document.getElementById('tag-cloud');
+            
+            if (!tags || tags.length === 0) {
+                tagCloud.innerHTML = `
+                    <div style="color: #666; font-size: 0.9rem;">
+                        暂无标签数据
+                    </div>
+                `;
+                return;
+            }
+            
+            // 按出现次数排序
+            tags.sort((a, b) => b.count - a.count);
+            
+            tagCloud.innerHTML = tags.map(tag => 
+                `<span class="tag" onclick="filterByTag('${tag.name}')">${tag.name} (${tag.count})</span>`
+            ).join('');
+        }
+
+        // 更新热门帖子
+        function updateHotPosts(posts) {
+            const hotPostsContainer = document.getElementById('hot-posts');
+            
+            if (!posts || posts.length === 0) {
+                hotPostsContainer.innerHTML = `
+                    <div style="color: #666; font-size: 0.9rem;">
+                        暂无热门帖子
+                    </div>
+                `;
+                return;
+            }
+            
+            hotPostsContainer.innerHTML = posts.map(post => `
+                <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; cursor: pointer;" onclick="viewPost('${post.id}')">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px;">${escapeHtml(post.title)}</div>
+                    <div style="color: #666; font-size: 0.8rem;">
+                        💬 ${post.reply_count || 0} 回复 | 👁️ ${post.view_count || 0} 浏览
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 发表新帖
+        document.getElementById('new-post-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            const tagsInput = document.getElementById('post-tags').value;
+            
+            const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+            try {
+                const response = await fetch('/api/forum/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        tags: tags
+                    })
+                });
+
+                if (response.ok) {
+                    alert('帖子发表成功！');
+                    document.getElementById('new-post-form').reset();
+                    togglePostForm();
+                    loadPosts(1);
+                } else {
+                    const error = await response.json();
+                    alert('发表失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('发表帖子失败:', error);
+                alert('网络错误，请重试');
+            }
+        });
+
+        // 工具函数：转义HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 工具函数：格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+    </script>
+</body>
+</html>

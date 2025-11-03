@@ -13,6 +13,8 @@
       <a href="/artists">歌手</a>
       <a href="/albums">专辑</a>
       <a href="/favorites" class="active">我的收藏</a>
+      <a href="/upload">上传</a>
+      <a href="/forum">音乐论坛</a>
       <a href="/profile">个人中心</a>
     </nav>
     <div class="search">
@@ -20,8 +22,6 @@
     </div>
     <div class="user-actions">
       <button class="primary">创建歌单</button>
-      <button id="loginOpen">登录</button>
-      <button id="registerOpen">注册</button>
       <button id="logoutBtn" class="hidden">退出</button>
       <span id="userNickname" class="hidden nickname"></span>
     </div>
@@ -148,7 +148,7 @@
     window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://gblnpzstdjnvclijjpbk.supabase.co';
     window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU';
   </script>
-  <script src="/static/app.js"></script>
+  <script src="app.js"></script>
   <script>
     // 收藏页面特定功能
     let currentUser = null;
@@ -343,11 +343,8 @@
       // 登录提示链接
       document.getElementById('loginPromptLink').addEventListener('click', function(e) {
         e.preventDefault();
-        // 触发app.js中的登录模态框打开
-        const loginOpen = document.getElementById('loginOpen');
-        if (loginOpen) {
-          loginOpen.click();
-        }
+        // 直接跳转到登录页面
+        window.location.href = '/login';
       });
     }
 
