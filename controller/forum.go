@@ -1149,6 +1149,299 @@ func HandleMyPosts(w http.ResponseWriter, r *http.Request) {
 	getMyPosts(w, r)
 }
 
+// HandleAdminPage 后台管理页面
+func HandleAdminPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/admin.html")
+}
+
+// HandleAdminPosts 后台管理帖子API
+func HandleAdminPosts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	switch r.Method {
+	case "GET":
+		getAdminPosts(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// HandleAdminReplies 后台管理回复API
+func HandleAdminReplies(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	switch r.Method {
+	case "GET":
+		getAdminReplies(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// HandleAdminPostDetail 后台管理单个帖子操作
+func HandleAdminPostDetail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从URL路径中提取帖子ID
+	path := strings.TrimPrefix(r.URL.Path, "/api/admin/posts/")
+	if path == "" || path == "/" {
+		sendJSONError(w, "无效的帖子ID", http.StatusBadRequest)
+		return
+	}
+	
+	// 移除末尾的斜杠
+	postID := strings.TrimSuffix(path, "/")
+	
+	switch r.Method {
+	case "DELETE":
+		deleteAdminPost(w, r, postID)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// HandleAdminReplyDetail 后台管理单个回复操作
+func HandleAdminReplyDetail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从URL路径中提取回复ID
+	path := strings.TrimPrefix(r.URL.Path, "/api/admin/replies/")
+	if path == "" || path == "/" {
+		sendJSONError(w, "无效的回复ID", http.StatusBadRequest)
+		return
+	}
+	
+	// 移除末尾的斜杠
+	replyID := strings.TrimSuffix(path, "/")
+	
+	switch r.Method {
+	case "DELETE":
+		deleteAdminReply(w, r, replyID)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// 后台删除帖子（管理员权限）
+func deleteAdminPost(w http.ResponseWriter, r *http.Request, postID string) {
+	// 发送删除请求
+	url := fmt.Sprintf("%s/rest/v1/forum_posts?id=eq.%s", 
+		os.Getenv("SUPABASE_URL"), postID)
+	
+	client := &http.Client{}
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		sendJSONError(w, "创建请求失败", http.StatusInternalServerError)
+		return
+	}
+	
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	
+	resp, err := client.Do(req)
+	if err != nil {
+		sendJSONError(w, "请求失败", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		sendJSONError(w, string(body), resp.StatusCode)
+		return
+	}
+	
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "帖子删除成功"})
+}
+
+// 后台删除回复（管理员权限）
+func deleteAdminReply(w http.ResponseWriter, r *http.Request, replyID string) {
+	// 发送删除请求
+	url := fmt.Sprintf("%s/rest/v1/forum_replies?id=eq.%s", 
+		os.Getenv("SUPABASE_URL"), replyID)
+	
+	client := &http.Client{}
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		sendJSONError(w, "创建请求失败", http.StatusInternalServerError)
+		return
+	}
+	
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	
+	resp, err := client.Do(req)
+	if err != nil {
+		sendJSONError(w, "请求失败", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		sendJSONError(w, string(body), resp.StatusCode)
+		return
+	}
+	
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "回复删除成功"})
+}
+
+// 获取所有帖子（后台管理用）
+func getAdminPosts(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	pageStr := query.Get("page")
+	limitStr := query.Get("limit")
+	
+	page := 1
+	limit := 20
+	
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+	
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+	
+	offset := (page - 1) * limit
+	
+	// 构建查询URL，获取所有帖子
+	url := fmt.Sprintf("%s/rest/v1/forum_posts?select=*&order=created_at.desc&offset=%d&limit=%d", 
+		os.Getenv("SUPABASE_URL"), offset, limit)
+	
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		sendJSONError(w, "创建请求失败", http.StatusInternalServerError)
+		return
+	}
+	
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	
+	resp, err := client.Do(req)
+	if err != nil {
+		sendJSONError(w, "请求失败", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		sendJSONError(w, string(body), resp.StatusCode)
+		return
+	}
+	
+	var posts []ForumPost
+	if err := json.NewDecoder(resp.Body).Decode(&posts); err != nil {
+		sendJSONError(w, "解析响应失败", http.StatusInternalServerError)
+		return
+	}
+	
+	// 如果数据库中没有帖子，返回空数组
+	if posts == nil {
+		posts = []ForumPost{}
+	}
+	
+	// 获取总帖子数用于分页
+	totalCount, err := getTotalPostsCount()
+	if err != nil {
+		totalCount = len(posts)
+	}
+	
+	response := map[string]interface{}{
+		"posts": posts,
+		"total": totalCount,
+		"page":  page,
+		"limit": limit,
+	}
+	
+	json.NewEncoder(w).Encode(response)
+}
+
+// 获取所有回复（后台管理用）
+func getAdminReplies(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	pageStr := query.Get("page")
+	limitStr := query.Get("limit")
+	
+	page := 1
+	limit := 20
+	
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+	
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+	
+	offset := (page - 1) * limit
+	
+	// 构建查询URL，获取所有回复
+	url := fmt.Sprintf("%s/rest/v1/forum_replies?select=*&order=created_at.desc&offset=%d&limit=%d", 
+		os.Getenv("SUPABASE_URL"), offset, limit)
+	
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		sendJSONError(w, "创建请求失败", http.StatusInternalServerError)
+		return
+	}
+	
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_ANON_KEY"))
+	
+	resp, err := client.Do(req)
+	if err != nil {
+		sendJSONError(w, "请求失败", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		sendJSONError(w, string(body), resp.StatusCode)
+		return
+	}
+	
+	var replies []ForumReply
+	if err := json.NewDecoder(resp.Body).Decode(&replies); err != nil {
+		sendJSONError(w, "解析响应失败", http.StatusInternalServerError)
+		return
+	}
+	
+	// 如果数据库中没有回复，返回空数组
+	if replies == nil {
+		replies = []ForumReply{}
+	}
+	
+	// 获取总回复数用于分页
+	totalCount, err := getTotalRepliesCount()
+	if err != nil {
+		totalCount = len(replies)
+	}
+	
+	response := map[string]interface{}{
+		"replies": replies,
+		"total":   totalCount,
+		"page":    page,
+		"limit":   limit,
+	}
+	
+	json.NewEncoder(w).Encode(response)
+}
+
 // 获取当前用户发布的帖子
 func getMyPosts(w http.ResponseWriter, r *http.Request) {
 	// 检查用户是否登录

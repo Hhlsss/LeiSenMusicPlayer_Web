@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI助手功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI助手功能测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 测试后端AI接口</h2>
+        <button onclick="testAIBackend()">测试后端AI接口</button>
+        <div id="backendResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 测试前端AI助手</h2>
+        <button onclick="testAIFrontend()">测试前端AI助手</button>
+        <div id="frontendResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 完整功能测试</h2>
+        <div>
+            <input type="text" id="testMessage" placeholder="输入测试消息" style="width: 300px; padding: 8px;">
+            <button onclick="testFullFunction()">发送测试消息</button>
+        </div>
+        <div id="fullTestResult" class="result"></div>
+    </div>
+
+    <script>
+        // 测试后端AI接口
+        async function testAIBackend() {
+            const resultDiv = document.getElementById('backendResult');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/api/ai/test');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ 后端AI接口测试成功</div>
+                        <div><strong>测试消息:</strong> ${data.test_message}</div>
+                        <div><strong>响应:</strong> ${data.response}</div>
+                        <div><strong>成功:</strong> ${data.success}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ 后端AI接口测试失败</div>
+                        <div><strong>错误:</strong> ${data.error}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ 后端AI接口测试失败</div>
+                    <div><strong>错误:</strong> ${error.message}</div>
+                `;
+            }
+        }
+        
+        // 测试前端AI助手
+        async function testAIFrontend() {
+            const resultDiv = document.getElementById('frontendResult');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                // 模拟前端发送消息
+                const testMessage = '你好，请介绍一下你自己';
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: testMessage,
+                        user_id: 'test_user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ 前端AI助手测试成功</div>
+                        <div><strong>发送消息:</strong> ${testMessage}</div>
+                        <div><strong>AI回复:</strong> ${data.message}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ 前端AI助手测试失败</div>
+                        <div><strong>错误:</strong> ${data.error || '未知错误'}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ 前端AI助手测试失败</div>
+                    <div><strong>错误:</strong> ${error.message}</div>
+                `;
+            }
+        }
+        
+        // 完整功能测试
+        async function testFullFunction() {
+            const message = document.getElementById('testMessage').value.trim();
+            if (!message) {
+                alert('请输入测试消息');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('fullTestResult');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        user_id: 'test_user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ 完整功能测试成功</div>
+                        <div><strong>您发送:</strong> ${message}</div>
+                        <div><strong>AI回复:</strong> ${data.message}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ 完整功能测试失败</div>
+                        <div><strong>错误:</strong> ${data.error || '未知错误'}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ 完整功能测试失败</div>
+                    <div><strong>错误:</strong> ${error.message}</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

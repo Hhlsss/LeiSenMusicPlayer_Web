@@ -235,6 +235,9 @@
       setTimeout(() => {
         initCarousel();
       }, 100);
+      
+      // 初始化智能音乐助手
+      initAIAssistant();
     });
 
     // 加载本地音乐数据
@@ -897,10 +900,7 @@
       window.authManager.initAllPagesAuth();
     }
 
-    // 智能音乐助手功能
-    document.addEventListener('DOMContentLoaded', () => {
-      initAIAssistant();
-    });
+
 
     function initAIAssistant() {
       const aiMessages = document.getElementById('aiMessages');
@@ -909,30 +909,6 @@
       
       if (!aiMessages || !aiInput || !aiSendBtn) return;
 
-      // Coze API配置 - 多端点尝试配置
-      const COZE_API_TOKEN = 'pat_1mZRTEMafM2v3ZjLZa2ioCoNRBp86Dh3bKl3X4667qtYgB0FLbOVW90fdkppYsaq';
-      
-      // 多个可能的API端点
-      const API_ENDPOINTS = [
-        {
-          name: 'Coze API v2',
-          url: 'https://api.coze.cn/open_api/v2/chat',
-          format: 'coze_v2'
-        },
-        {
-          name: 'Coze API v1',
-          url: 'https://api.coze.cn/v1/chat/completions',
-          format: 'openai'
-        },
-        {
-          name: 'Coze WebSocket兼容',
-          url: 'https://api.coze.cn/v1/chat/messages',
-          format: 'coze_ws'
-        }
-      ];
-      
-      let currentEndpointIndex = 0;
-      
       // 智能体配置信息
       const BOT_ID = '7567959568312369215'; // 您的智能体ID
       const SPACE_ID = '7559750439882375218'; // 您的空间ID
@@ -951,89 +927,34 @@
         const loadingMessage = addMessage('正在思考中...', 'bot', true);
 
         try {
-          const currentEndpoint = API_ENDPOINTS[currentEndpointIndex];
-          console.log(`尝试API端点 ${currentEndpointIndex + 1}/${API_ENDPOINTS.length}:`, currentEndpoint.name);
-          
-          // 根据端点格式构建请求体
-          let requestBody;
-          if (currentEndpoint.format === 'coze_v2') {
-            requestBody = {
-              conversation_id: 'music_assistant_' + Date.now(),
-              bot_id: BOT_ID,
-              user: 'music_web_user',
-              query: message,
-              stream: false
-            };
-          } else if (currentEndpoint.format === 'openai') {
-            requestBody = {
-              model: 'coze',
-              messages: [
-                {
-                  role: 'user',
-                  content: message
-                }
-              ],
-              max_tokens: 500,
-              temperature: 0.7
-            };
-          } else {
-            requestBody = {
-              bot_id: BOT_ID,
-              message: message,
-              stream: false
-            };
-          }
-          
-          console.log('请求参数:', requestBody);
-          
-          const response = await fetch(currentEndpoint.url, {
+          // 调用后端AI聊天接口
+          const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${COZE_API_TOKEN}`
+              'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({
+              message: message,
+              user_id: 'music_web_user'
+            })
           });
           
-          console.log('API响应状态:', response.status, response.statusText);
+          console.log('AI助手响应状态:', response.status, response.statusText);
 
           if (!response.ok) {
-            // 如果当前端点失败，尝试下一个端点
-            if (currentEndpointIndex < API_ENDPOINTS.length - 1) {
-              currentEndpointIndex++;
-              console.log('切换到下一个API端点:', API_ENDPOINTS[currentEndpointIndex].name);
-              
-              // 移除加载状态
-              loadingMessage.remove();
-              
-              // 重新发送消息
-              addMessage('正在尝试其他连接方式...', 'bot', true);
-              return sendMessage();
-            }
-            
-            throw new Error(`所有API端点都失败: ${response.status} - ${response.statusText}`);
+            throw new Error(`AI助手服务错误: ${response.status} - ${response.statusText}`);
           }
 
           const data = await response.json();
-          console.log('API响应数据:', data);
+          console.log('AI助手响应数据:', data);
           
           // 移除加载状态
           loadingMessage.remove();
           
-          // 添加AI回复 - 适配Coze API响应格式
-          if (data.messages && data.messages.length > 0) {
-            // Coze API返回格式：messages数组包含回复内容
-            const aiResponse = data.messages[0].content;
-            addMessage(aiResponse, 'bot');
-          } else if (data.choices && data.choices.length > 0) {
-            // 兼容OpenAI格式
-            const aiResponse = data.choices[0].message.content;
-            addMessage(aiResponse, 'bot');
-          } else if (data.content) {
-            // 直接包含content字段
-            addMessage(data.content, 'bot');
+          // 添加AI回复
+          if (data.success && data.message) {
+            addMessage(data.message, 'bot');
           } else {
-            console.log('Coze API响应:', data);
             addMessage('抱歉，我暂时无法回答这个问题。请稍后再试。', 'bot');
           }
 

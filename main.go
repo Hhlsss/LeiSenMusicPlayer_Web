@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"MusicPlayerWeb/controller"
 	"MusicPlayerWeb/db"
@@ -18,12 +19,29 @@ func main() {
 	// 创建自定义多路复用器
 	mux := http.NewServeMux()
 
-	// 静态资源：/static/* 映射到 ./web 目录
+	// 静态资源：/static/* 映射到 ./web 目录，并设置正确的MIME类型
 	fs := http.FileServer(http.Dir("web"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 根据文件扩展名设置正确的Content-Type
+		if r.URL.Path == "" {
+			http.NotFound(w, r)
+			return
+		}
+		
+		// 设置正确的MIME类型
+		if strings.HasSuffix(r.URL.Path, ".css") {
+			w.Header().Set("Content-Type", "text/css")
+		} else if strings.HasSuffix(r.URL.Path, ".js") {
+			w.Header().Set("Content-Type", "application/javascript")
+		} else if strings.HasSuffix(r.URL.Path, ".html") {
+			w.Header().Set("Content-Type", "text/html")
+		}
+		
+		fs.ServeHTTP(w, r)
+	})))
 
 	// 页面路由
-	mux.HandleFunc("/", controller.HandleIndex)
+	mux.HandleFunc("/admin", controller.HandleAdminPage)
 	mux.HandleFunc("/login", controller.HandleLoginPage)
 	mux.HandleFunc("/song", controller.HandleSong)
 	mux.HandleFunc("/artists", controller.HandleArtists)
@@ -37,6 +55,7 @@ func main() {
 	mux.HandleFunc("/forum/post/", controller.HandleForumPostPage)
 	mux.HandleFunc("/playlists", controller.HandlePlaylistsPage)
 	mux.HandleFunc("/requirements", controller.HandleRequirementsPage)
+	mux.HandleFunc("/", controller.HandleIndex)
 
 	// API 路由
 	mux.HandleFunc("/api/register", controller.HandleRegister)
@@ -86,7 +105,15 @@ func main() {
 	mux.HandleFunc("/api/forum/stats", controller.HandleForumStats)
 	mux.HandleFunc("/api/forum/my-posts", controller.HandleMyPosts)
 
+	// 后台管理功能 API - 修复路由冲突
+	mux.HandleFunc("/api/admin/posts", controller.HandleAdminPosts)
+	mux.HandleFunc("/api/admin/posts/", controller.HandleAdminPostDetail)
+	mux.HandleFunc("/api/admin/replies", controller.HandleAdminReplies)
+	mux.HandleFunc("/api/admin/replies/", controller.HandleAdminReplyDetail)
 
+	// AI助手功能 API
+	mux.HandleFunc("/api/ai/chat", controller.HandleAIChat)
+	mux.HandleFunc("/api/ai/test", controller.HandleAIChatTest)
 
 	log.Println("Server started at http://localhost:8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {

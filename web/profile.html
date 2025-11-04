@@ -236,6 +236,73 @@
       border: 1px solid #bee5eb;
     }
 
+    /* 账户管理样式 */
+    .account-management-card {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .account-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .action-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      border-left: 4px solid #667eea;
+    }
+
+    .action-item h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 18px;
+    }
+
+    .action-item p {
+      margin: 0 0 15px 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .admin-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .admin-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .logout-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
     @media (max-width: 768px) {
       .profile-layout {
         flex-direction: column;
@@ -476,10 +543,20 @@
             
             <!-- 账户管理标签页 -->
             <div class="tab-content" id="account-management-tab">
-              <div class="logout-card">
+              <div class="account-management-card">
                 <h3>账户管理</h3>
-                <p>安全退出当前账户，保护您的隐私</p>
-                <button id="profileLogoutBtn" class="logout-btn">退出登录</button>
+                <div class="account-actions">
+                  <div class="action-item">
+                    <h4>后台管理系统</h4>
+                    <p>进入后台管理系统，管理所有帖子和评论</p>
+                    <button id="adminPanelBtn" class="admin-btn">进入后台管理</button>
+                  </div>
+                  <div class="action-item">
+                    <h4>账户安全</h4>
+                    <p>安全退出当前账户，保护您的隐私</p>
+                    <button id="profileLogoutBtn" class="logout-btn">退出登录</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -671,6 +748,14 @@
       // 初始化
       checkAuthStatus();
       
+      // 设置后台管理按钮事件
+      const adminPanelBtn = document.getElementById('adminPanelBtn');
+      if (adminPanelBtn) {
+        adminPanelBtn.addEventListener('click', function() {
+          window.location.href = '/admin';
+        });
+      }
+
       // 设置退出登录按钮事件
       const profileLogoutBtn = document.getElementById('profileLogoutBtn');
       if (profileLogoutBtn) {
