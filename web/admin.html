@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>后台管理系统 - 音乐论坛</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet">
     <style>
         /* 后台管理样式 */
         .admin-container {
@@ -14,12 +14,14 @@
         }
 
         .admin-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: white;
+            color: #333;
             padding: 30px;
             border-radius: 10px;
             margin-bottom: 30px;
             text-align: center;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .admin-header h1 {
@@ -223,34 +225,22 @@
             <p>管理论坛帖子和评论</p>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="total-posts">0</div>
-                <div class="stat-label">总帖子数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="total-replies">0</div>
-                <div class="stat-label">总评论数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="today-posts">0</div>
-                <div class="stat-label">今日新帖</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="today-replies">0</div>
-                <div class="stat-label">今日评论</div>
-            </div>
-        </div>
+
 
         <div class="admin-tabs">
             <div class="admin-tab active" data-tab="posts">帖子管理</div>
             <div class="admin-tab" data-tab="replies">评论管理</div>
+            <div class="admin-tab" data-tab="users">用户管理</div>
         </div>
 
         <div class="admin-content">
             <!-- 帖子管理 -->
             <div class="admin-tab-content active" id="posts-tab">
                 <h3>帖子列表</h3>
+                <div class="search-bar">
+                    <input type="text" id="post-search" placeholder="搜索帖子标题、内容或作者..." style="width: 300px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 16px;">
+                    <button onclick="searchPosts()" style="margin-left: 8px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">搜索</button>
+                </div>
                 <div id="posts-table">
                     <div class="loading">加载中...</div>
                 </div>
@@ -260,18 +250,42 @@
             <!-- 评论管理 -->
             <div class="admin-tab-content" id="replies-tab">
                 <h3>评论列表</h3>
+                <div class="search-bar">
+                    <input type="text" id="reply-search" placeholder="搜索评论内容或作者..." style="width: 300px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 16px;">
+                    <button onclick="searchReplies()" style="margin-left: 8px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">搜索</button>
+                </div>
                 <div id="replies-table">
                     <div class="loading">加载中...</div>
                 </div>
                 <div class="pagination" id="replies-pagination"></div>
             </div>
+
+            <!-- 用户管理 -->
+            <div class="admin-tab-content" id="users-tab">
+                <h3>用户列表</h3>
+                <div class="user-search-bar">
+                    <input type="text" id="user-search" placeholder="搜索用户账号、邮箱或昵称..." style="width: 300px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 16px;">
+                    <button onclick="searchUsers()" style="margin-left: 8px; padding: 8px 16px; background: #d33; color: white; border: none; border-radius: 4px; cursor: pointer;">搜索</button>
+                </div>
+                <div id="users-table">
+                    <div class="loading">加载中...</div>
+                </div>
+                <div class="pagination" id="users-pagination"></div>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Supabase 初始化
+        const SUPABASE_URL = "https://gblnpzstdjnvclijjpbk.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdibG5wenN0ZGpudmNsaWpqcGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NjgzNjEsImV4cCI6MjA3NjA0NDM2MX0.YaMwiKVVUgToza4vMtBjHAgvE28fdWTqtNHHtI9peFU";
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
         // 全局变量
         let currentPostsPage = 1;
         let currentRepliesPage = 1;
+        let currentPostsSearchQuery = '';
+        let currentRepliesSearchQuery = '';
         const itemsPerPage = 10;
 
         // 页面加载完成后初始化
@@ -279,8 +293,7 @@
             // 初始化标签页切换
             initTabs();
             
-            // 加载统计数据
-            loadStats();
+
             
             // 加载帖子列表
             loadPosts();
@@ -312,19 +325,32 @@
         // 加载统计数据
         async function loadStats() {
             try {
-                const response = await fetch('/api/forum/stats');
-                if (!response.ok) throw new Error('获取统计数据失败');
+                const token = await getUserToken();
+                const response = await fetch('/api/admin/dashboard', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        alert('您没有管理员权限，无法访问后台管理系统');
+                        window.location.href = '/profile';
+                        return;
+                    }
+                    throw new Error('获取统计数据失败');
+                }
                 
-                const stats = await response.json();
+                const data = await response.json();
+                const stats = data.stats || {};
                 
                 document.getElementById('total-posts').textContent = stats.total_posts || 0;
                 document.getElementById('total-replies').textContent = stats.total_replies || 0;
                 document.getElementById('today-posts').textContent = stats.today_posts || 0;
-                // 今日评论数需要单独计算
-                const todayReplies = await getTodayRepliesCount();
-                document.getElementById('today-replies').textContent = todayReplies || 0;
+                document.getElementById('today-replies').textContent = stats.today_replies || 0;
             } catch (error) {
                 console.error('加载统计数据失败:', error);
+                if (error.message.includes('权限')) {
+                    alert('您没有管理员权限，无法访问后台管理系统');
+                    window.location.href = '/profile';
+                }
             }
         }
 
@@ -353,15 +379,37 @@
         }
 
         // 加载帖子列表
-        async function loadPosts(page = 1) {
+        async function loadPosts(page = 1, searchQuery = '') {
             try {
-                const response = await fetch(`/api/admin/posts?page=${page}&limit=${itemsPerPage}`);
-                if (!response.ok) throw new Error('获取帖子列表失败');
+                let url = `/api/admin/posts?page=${page}&limit=${itemsPerPage}`;
+                if (searchQuery) {
+                    url += `&search=${encodeURIComponent(searchQuery)}`;
+                }
+                
+                const token = await getUserToken();
+                const response = await fetch(url, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('请先登录');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    if (response.status === 403) {
+                        alert('您没有管理员权限');
+                        window.location.href = '/profile';
+                        return;
+                    }
+                    throw new Error('获取帖子列表失败');
+                }
                 
                 const data = await response.json();
                 displayPosts(data.posts || []);
-                createPagination('posts', data.total || 0, page);
+                createPostsPagination(data.total || 0, page, searchQuery);
                 currentPostsPage = page;
+                currentPostsSearchQuery = searchQuery;
             } catch (error) {
                 console.error('加载帖子列表失败:', error);
                 document.getElementById('posts-table').innerHTML = '<div class="no-data">加载失败，请刷新页面重试</div>';
@@ -419,15 +467,37 @@
         }
 
         // 加载评论列表
-        async function loadReplies(page = 1) {
+        async function loadReplies(page = 1, searchQuery = '') {
             try {
-                const response = await fetch(`/api/admin/replies?page=${page}&limit=${itemsPerPage}`);
-                if (!response.ok) throw new Error('获取评论列表失败');
+                let url = `/api/admin/replies?page=${page}&limit=${itemsPerPage}`;
+                if (searchQuery) {
+                    url += `&search=${encodeURIComponent(searchQuery)}`;
+                }
+                
+                const token = await getUserToken();
+                const response = await fetch(url, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('请先登录');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    if (response.status === 403) {
+                        alert('您没有管理员权限');
+                        window.location.href = '/profile';
+                        return;
+                    }
+                    throw new Error('获取评论列表失败');
+                }
                 
                 const data = await response.json();
                 displayReplies(data.replies || []);
-                createPagination('replies', data.total || 0, page);
+                createRepliesPagination(data.total || 0, page, searchQuery);
                 currentRepliesPage = page;
+                currentRepliesSearchQuery = searchQuery;
             } catch (error) {
                 console.error('加载评论列表失败:', error);
                 document.getElementById('replies-table').innerHTML = '<div class="no-data">加载失败，请刷新页面重试</div>';
@@ -529,18 +599,23 @@
             }
 
             try {
+                const token = await getUserToken();
                 const response = await fetch(`/api/admin/posts/${postId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
 
-                if (!response.ok) throw new Error('删除失败');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '删除失败');
+                }
 
                 alert('帖子删除成功！');
                 loadPosts(currentPostsPage); // 重新加载当前页
                 loadStats(); // 更新统计数据
             } catch (error) {
                 console.error('删除帖子失败:', error);
-                alert('删除失败，请重试');
+                alert('删除失败: ' + error.message);
             }
         }
 
@@ -551,19 +626,40 @@
             }
 
             try {
+                const token = await getUserToken();
                 const response = await fetch(`/api/admin/replies/${replyId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
 
-                if (!response.ok) throw new Error('删除失败');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '删除失败');
+                }
 
                 alert('评论删除成功！');
                 loadReplies(currentRepliesPage); // 重新加载当前页
                 loadStats(); // 更新统计数据
             } catch (error) {
                 console.error('删除评论失败:', error);
-                alert('删除失败，请重试');
+                alert('删除失败: ' + error.message);
             }
+        }
+
+        // 获取用户认证token（Supabase 会话 JWT）
+        async function getUserToken() {
+            try {
+                if (supabase) {
+                    const { data } = await supabase.auth.getSession();
+                    const accessToken = data && data.session ? data.session.access_token : '';
+                    if (accessToken) return accessToken;
+                }
+            } catch (e) {
+                console.warn('获取 Supabase 会话失败', e);
+            }
+            // 兼容旧存储（不推荐，仅兜底）
+            const token = localStorage.getItem('supabase.auth.token') || localStorage.getItem('userToken');
+            return token || '';
         }
 
         // 工具函数：转义HTML
@@ -584,6 +680,306 @@
                 return dateString;
             }
         }
+
+        // 用户管理相关函数
+        let currentUsersPage = 1;
+        let currentSearchQuery = '';
+
+        // 加载用户列表
+        async function loadUsers(page = 1, searchQuery = '') {
+            try {
+                const token = await getUserToken();
+                const response = await fetch('/api/admin/users', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        alert('您没有管理员权限，无法访问用户管理功能');
+                        return;
+                    }
+                    throw new Error('获取用户列表失败');
+                }
+                
+                const data = await response.json();
+                
+                // 检查是否有错误信息
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayUsers(data.users || []);
+                currentUsersPage = page;
+                currentSearchQuery = searchQuery;
+            } catch (error) {
+                console.error('加载用户列表失败:', error);
+                document.getElementById('users-table').innerHTML = `
+                    <div class="no-data">
+                        <p>加载失败：${error.message}</p>
+                        ${error.message.includes('权限') ? '<p>您没有管理员权限</p>' : ''}
+                    </div>
+                `;
+            }
+        }
+
+        // 显示用户列表
+        function displayUsers(users) {
+            const container = document.getElementById('users-table');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="no-data">暂无用户数据</div>';
+                return;
+            }
+
+            let html = `
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>用户ID</th>
+                            <th>账号/邮箱</th>
+                            <th>昵称</th>
+                            <th>管理员</th>
+                            <th>注册时间</th>
+                            <th>最后登录</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach(user => {
+                html += `
+                    <tr>
+                        <td>${user.user_id ? user.user_id.substring(0, 8) + '...' : '未知'}</td>
+                        <td>${escapeHtml(user.email || '未设置')}</td>
+                        <td>${escapeHtml(user.nickname || '未设置昵称')}</td>
+                        <td>
+                            <span style="color: ${user.is_admin ? '#28a745' : '#6c757d'};">
+                                ${user.is_admin ? '是' : '否'}
+                            </span>
+                        </td>
+                        <td>${formatDate(user.created_at)}</td>
+                        <td>${formatDate(user.updated_at)}</td>
+                        <td>
+                            <span style="color: #28a745;">正常</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-edit" onclick="editUser('${user.user_id}', '${escapeHtml(user.nickname || '')}', ${user.is_admin})">编辑</button>
+                                <button class="btn-delete" onclick="toggleAdminStatus('${user.user_id}', ${!user.is_admin})">
+                                    ${user.is_admin ? '取消管理员' : '设为管理员'}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // 创建用户分页
+        function createUsersPagination(totalItems, currentPage) {
+            const container = document.getElementById('users-pagination');
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button onclick="loadUsers(1, '${currentSearchQuery}')" ${currentPage === 1 ? 'disabled' : ''}>
+                    首页
+                </button>
+                <button onclick="loadUsers(${currentPage - 1}, '${currentSearchQuery}')" ${currentPage === 1 ? 'disabled' : ''}>
+                    上一页
+                </button>
+                <span>第 ${currentPage} 页 / 共 ${totalPages} 页</span>
+                <button onclick="loadUsers(${currentPage + 1}, '${currentSearchQuery}')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    下一页
+                </button>
+                <button onclick="loadUsers(${totalPages}, '${currentSearchQuery}')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    末页
+                </button>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 搜索用户
+        function searchUsers() {
+            const searchInput = document.getElementById('user-search');
+            const query = searchInput.value.trim();
+            loadUsers(1, query);
+        }
+
+        // 搜索帖子
+        function searchPosts() {
+            const searchInput = document.getElementById('post-search');
+            const query = searchInput.value.trim();
+            loadPosts(1, query);
+        }
+
+        // 搜索评论
+        function searchReplies() {
+            const searchInput = document.getElementById('reply-search');
+            const query = searchInput.value.trim();
+            loadReplies(1, query);
+        }
+
+        // 创建帖子分页
+        function createPostsPagination(totalItems, currentPage, searchQuery) {
+            const container = document.getElementById('posts-pagination');
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button onclick="loadPosts(1, '${searchQuery}')" ${currentPage === 1 ? 'disabled' : ''}>
+                    首页
+                </button>
+                <button onclick="loadPosts(${currentPage - 1}, '${searchQuery}')" ${currentPage === 1 ? 'disabled' : ''}>
+                    上一页
+                </button>
+                <span>第 ${currentPage} 页 / 共 ${totalPages} 页</span>
+                <button onclick="loadPosts(${currentPage + 1}, '${searchQuery}')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    下一页
+                </button>
+                <button onclick="loadPosts(${totalPages}, '${searchQuery}')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    末页
+                </button>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 创建评论分页
+        function createRepliesPagination(totalItems, currentPage, searchQuery) {
+            const container = document.getElementById('replies-pagination');
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button onclick="loadReplies(1, '${searchQuery}')" ${currentPage === 1 ? 'disabled' : ''}>
+                    首页
+                </button>
+                <button onclick="loadReplies(${currentPage - 1}, '${searchQuery}')" ${currentPage === 1 ? 'disabled' : ''}>
+                    上一页
+                </button>
+                <span>第 ${currentPage} 页 / 共 ${totalPages} 页</span>
+                <button onclick="loadReplies(${currentPage + 1}, '${searchQuery}')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    下一页
+                </button>
+                <button onclick="loadReplies(${totalPages}, '${searchQuery}')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    末页
+                </button>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // 查看用户资料
+        function viewUserProfile(userId) {
+            // 这里可以跳转到用户详情页面或打开模态框
+            alert('查看用户资料功能待实现，用户ID: ' + userId);
+        }
+
+        // 编辑用户
+        function editUser(userId, nickname, isAdmin) {
+            const newNickname = prompt('请输入新的昵称：', nickname || '');
+            if (newNickname === null) return; // 用户取消
+            
+            if (newNickname.trim() === '') {
+                alert('昵称不能为空');
+                return;
+            }
+            
+            updateUser(userId, newNickname, isAdmin);
+        }
+
+        // 更新用户信息
+        async function updateUser(userId, nickname, isAdmin) {
+            try {
+                const token = await getUserToken();
+                const response = await fetch('/api/admin/users', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        nickname: nickname,
+                        is_admin: isAdmin
+                    })
+                });
+
+                if (!response.ok) throw new Error('更新用户信息失败');
+
+                alert('用户信息更新成功！');
+                loadUsers(); // 重新加载用户列表
+            } catch (error) {
+                console.error('更新用户信息失败:', error);
+                alert('更新失败，请重试');
+            }
+        }
+
+        // 切换管理员状态
+        async function toggleAdminStatus(userId, makeAdmin) {
+            const action = makeAdmin ? '设为管理员' : '取消管理员';
+            if (!confirm(`确定要${action}这个用户吗？`)) {
+                return;
+            }
+
+            try {
+                const token = await getUserToken();
+                const response = await fetch('/api/admin/users', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        is_admin: makeAdmin
+                    })
+                });
+
+                if (!response.ok) throw new Error(`${action}失败`);
+
+                alert(`用户${action}成功！`);
+                loadUsers(); // 重新加载用户列表
+            } catch (error) {
+                console.error(`${action}失败:`, error);
+                alert(`${action}失败，请重试`);
+            }
+        }
+
+        // 初始化标签页切换时加载用户数据
+        const originalInitTabs = initTabs;
+        initTabs = function() {
+            originalInitTabs();
+            
+            // 监听用户管理标签页的点击
+            const userTab = document.querySelector('.admin-tab[data-tab="users"]');
+            if (userTab) {
+                userTab.addEventListener('click', function() {
+                    // 延迟加载用户数据，避免频繁请求
+                    setTimeout(() => {
+                        loadUsers();
+                    }, 100);
+                });
+            }
+        };
     </script>
 </body>
 </html>

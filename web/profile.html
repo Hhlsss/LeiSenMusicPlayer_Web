@@ -8,47 +8,59 @@
   <style>
     .profile-layout {
       display: flex;
-      gap: 30px;
-      max-width: 1200px;
-      margin: 0 auto;
+      gap: 0;
+      width: 100%;
+      margin: 0;
+      padding: 0;
     }
 
     .profile-sidebar {
-      width: 250px;
+      width: 280px;
       flex-shrink: 0;
+      margin-left: 0;
+      background: #f8f9fa;
+      border-right: 1px solid #e0e0e0;
+      min-height: calc(100vh - 200px);
     }
 
     .sidebar-nav {
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: transparent;
+      border-radius: 0;
+      padding: 30px 20px;
+      box-shadow: none;
+      border: none;
     }
 
     .nav-item {
-      display: block;
+      display: flex;
+      align-items: center;
       width: 100%;
-      padding: 12px 16px;
+      padding: 16px 20px;
       margin-bottom: 8px;
       border: none;
-      background: #f8f9fa;
+      background: transparent;
       border-radius: 8px;
       cursor: pointer;
       text-align: left;
-      font-size: 14px;
-      color: #333;
+      font-size: 15px;
+      color: #555;
       transition: all 0.3s ease;
+      border-left: 3px solid transparent;
     }
 
     .nav-item:hover {
       background: #e9ecef;
-      transform: translateX(5px);
+      color: #333;
+      transform: none;
+      border-left-color: transparent;
     }
 
     .nav-item.active {
       background: #667eea;
       color: white;
       font-weight: 600;
+      border-left-color: #5a67d8;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
     .profile-main {
@@ -357,8 +369,6 @@
       <a href="/">我的音乐</a>
       <a href="/artists">歌手</a>
       <a href="/albums">专辑</a>
-      <a href="/favorites">我的收藏</a>
-      <a href="/upload">上传</a>
       <a href="/forum">音乐论坛</a>
       <a href="/profile" class="active">个人中心</a>
     </nav>
@@ -366,7 +376,6 @@
       <input type="text" placeholder="搜索歌曲/歌手/专辑" />
     </div>
     <div class="user-actions">
-      <button class="primary">创建歌单</button>
       <button id="logoutBtn" class="hidden">退出</button>
       <span id="userNickname" class="hidden nickname"></span>
     </div>
@@ -394,7 +403,6 @@
           <div class="profile-sidebar">
             <div class="sidebar-nav">
               <button class="nav-item active" data-tab="basic-info">基本信息</button>
-              <button class="nav-item" data-tab="personal-stats">个人统计</button>
               <button class="nav-item" data-tab="my-posts">我发过的帖子</button>
               <button class="nav-item" data-tab="music-path-settings">设置本地音乐路径</button>
               <button class="nav-item" data-tab="account-management">账户管理</button>
@@ -431,27 +439,6 @@
                     <button type="button" id="cancelEdit" class="secondary">取消</button>
                   </div>
                 </form>
-              </div>
-            </div>
-            
-            <!-- 个人统计标签页 -->
-            <div class="tab-content" id="personal-stats-tab">
-              <div class="profile-stats">
-                <h3>个人统计</h3>
-                <div class="stats-grid">
-                  <div class="stat-item">
-                    <span class="stat-number" id="favoritesCount">0</span>
-                    <span class="stat-label">收藏歌曲</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-number" id="commentsCount">0</span>
-                    <span class="stat-label">发表评论</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-number" id="playlistsCount">0</span>
-                    <span class="stat-label">创建歌单</span>
-                  </div>
-                </div>
               </div>
             </div>
             

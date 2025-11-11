@@ -7,6 +7,7 @@ import (
 
 	"MusicPlayerWeb/controller"
 	"MusicPlayerWeb/db"
+	"MusicPlayerWeb/middleware"
 )
 
 func main() {
@@ -105,18 +106,23 @@ func main() {
 	mux.HandleFunc("/api/forum/stats", controller.HandleForumStats)
 	mux.HandleFunc("/api/forum/my-posts", controller.HandleMyPosts)
 
-	// 后台管理功能 API - 修复路由冲突
-	mux.HandleFunc("/api/admin/posts", controller.HandleAdminPosts)
-	mux.HandleFunc("/api/admin/posts/", controller.HandleAdminPostDetail)
-	mux.HandleFunc("/api/admin/replies", controller.HandleAdminReplies)
-	mux.HandleFunc("/api/admin/replies/", controller.HandleAdminReplyDetail)
+	// 管理员系统 API
+	mux.HandleFunc("/api/admin/dashboard", controller.AdminMiddleware(controller.HandleAdminDashboard))
+	mux.HandleFunc("/api/admin/users", controller.AdminMiddleware(controller.HandleAdminUsers))
+	mux.HandleFunc("/api/admin/posts", controller.AdminMiddleware(controller.HandleAdminPosts))
+	mux.HandleFunc("/api/admin/posts/", controller.AdminMiddleware(controller.HandleAdminPosts))
+	mux.HandleFunc("/api/admin/replies", controller.AdminMiddleware(controller.HandleAdminReplies))
+	mux.HandleFunc("/api/admin/replies/", controller.AdminMiddleware(controller.HandleAdminReplies))
 
 	// AI助手功能 API
 	mux.HandleFunc("/api/ai/chat", controller.HandleAIChat)
 	mux.HandleFunc("/api/ai/test", controller.HandleAIChatTest)
 
+	// 使用CORS中间件包装所有路由
+	handler := middleware.CORS(mux)
+
 	log.Println("Server started at http://localhost:8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		log.Fatal(err)
 	}
 }

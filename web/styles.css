@@ -1356,8 +1356,8 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* 个人中心样式 */
 .profile-container {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 20px;
 }
 

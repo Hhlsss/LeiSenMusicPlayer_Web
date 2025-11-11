@@ -17,11 +17,7 @@ type authReq struct {
 	Password string `json:"password"`
 }
 
-func writeJSON(w http.ResponseWriter, status int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
+
 
 // HandleRegister 处理注册请求：POST /api/register
 func HandleRegister(w http.ResponseWriter, r *http.Request) {
